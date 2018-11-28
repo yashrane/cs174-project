@@ -86,6 +86,11 @@ public class ATM{
     return "";
   }
 
+  // TODO: figure out how this works
+  public void log_transaction(){
+
+  }
+
 
   //NOTE: functions for top-up, collect, pay-friend have not been written
 
