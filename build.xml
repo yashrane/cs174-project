@@ -15,8 +15,8 @@
                debuglevel="lines,vars,source"/>
     </target>
 
-    <target name="run">
-        <java classname="Main" fork = "true">
+    <target name="atm">
+        <java classname="ATMInterface" fork = "true">
             <classpath>
                 <pathelement path="build"/>
                 <pathelement location="lib/ojdbc6.jar"/>

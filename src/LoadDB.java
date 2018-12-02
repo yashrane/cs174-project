@@ -10,11 +10,20 @@ public class LoadDB{
     DatabaseConnection database = new DatabaseConnection();
 
     reset_database(database);
+    // drop_tables(database);
     // create_tables(database);
 
     populate_customers("res/customers.csv", database);
     populate_accounts("res/accounts.csv", database);
     populate_owns("res/owns.csv", database);
+    populate_transactions("res/transactions.csv", database);
+  }
+
+  public static void drop_tables(DatabaseConnection database){
+    database.execute_query("drop table owns");
+    database.execute_query("drop table transaction");
+    database.execute_query("drop table account");
+    database.execute_query("drop table customer");
   }
 
   public static void reset_database(DatabaseConnection database){
@@ -70,6 +79,20 @@ public class LoadDB{
       "FOREIGN KEY(a_id) REFERENCES Account ON DELETE CASCADE"+
       ")";
     database.execute_query(createOwns);
+
+    String createTransactions = "CREATE TABLE Transaction("+
+      "amount	REAL,"+
+      "timestamp		DATE,"+
+      "type		CHAR(10),"+
+      "t_id		CHAR(10),"+
+      "check_no	CHAR(20),"+
+      "receiving_id	CHAR(10),"+
+      "paying_id	CHAR(10),"+
+      "PRIMARY KEY (t_id),"+
+      "FOREIGN KEY(receiving_id) REFERENCES Account(a_id) ON DELETE CASCADE,"+
+      "FOREIGN KEY(paying_id) REFERENCES Account(a_id) ON DELETE CASCADE "+
+    ")";
+    database.execute_query(createTransactions);
   }
 
   public static void delete_from_tables(DatabaseConnection database, String tablename){
@@ -79,6 +102,15 @@ public class LoadDB{
 
   public static String parse(String s){
     return s.replace("'", "''");
+  }
+
+  public static String parseNULL(String s){
+    if(s.isEmpty()){
+      return "NULL";
+    }
+    else{
+      return "'" + parse(s) + "'";
+    }
   }
 
   public static void populate_customers(String filename, DatabaseConnection database){
@@ -151,6 +183,33 @@ public class LoadDB{
 
         String query = "insert into Owns (taxID, a_id) values ('"+
           tax_id+"', '" + aid + "')";
+
+        database.execute_query(query);
+
+      }
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public static void populate_transactions(String filename, DatabaseConnection database){
+    String line="";
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+      while ((line = br.readLine()) != null) {
+        String[] columns = line.split(",");
+
+        String t_id = "'" + parse(columns[0]) + "'";
+        String amount = parse(columns[1]);
+        String type = "'" +  parse(columns[2]) + "'";
+        String date = "TO_DATE('" + parse(columns[3]) + "', 'YYYY-MM-DD')";
+        String check_no = parseNULL(columns[4]);
+        String paying_id = parseNULL(columns[5]);
+        String receiving_id = parseNULL(columns[6]);
+
+
+        String query = "insert into transaction(t_id, amount, type, timestamp, check_no, paying_id, receiving_id) values("+
+          t_id+", " + amount+", " + type+", " + date+", " + check_no+", " + paying_id+", " + receiving_id + ")";
 
         database.execute_query(query);
 
