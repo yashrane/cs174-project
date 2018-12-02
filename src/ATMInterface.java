@@ -39,9 +39,7 @@ class ATMInterface {
 
 
       //Adding Components to the frame.
-      // frame.getContentPane().add(BorderLayout.SOUTH, panel);
       frame.getContentPane().add(BorderLayout.NORTH, header);
-      // frame.getContentPane().add(BorderLayout.CENTER, ta);
       frame.getContentPane().add(BorderLayout.CENTER, cards);
       frame.setVisible(true);
     }
@@ -60,6 +58,33 @@ class ATMInterface {
         cl.show(this.cards, label);
     }
 
+    private void showError(String message){
+      JFrame frame = new JFrame("ERROR");
+      frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+      frame.setSize(200, 100);
+      JPanel panel = new JPanel();
+      panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+      JLabel error = new JLabel(message);
+      error.setAlignmentX(Component.CENTER_ALIGNMENT);
+      error.setAlignmentY(Component.CENTER_ALIGNMENT);
+      JButton close = new JButton("OK");
+      close.addActionListener(new ActionListener(){
+        @Override
+        public void actionPerformed(ActionEvent e){
+          frame.dispose();
+        }
+      });
+
+      panel.add(Box.createVerticalGlue());
+      panel.add(error);
+      panel.add(Box.createRigidArea(new Dimension(0,5)));
+      panel.add(close);
+      panel.add(Box.createVerticalGlue());
+
+      frame.getContentPane().add(panel);
+      frame.setVisible(true);
+    }
+
     private JPanel getDepositPanel(){
       return makeFormPanel(new String []{"Account ID", "Amount to Deposit"}, new FormAction(){
         public void onSubmit(String [] inputs){
@@ -71,6 +96,7 @@ class ATMInterface {
         }
       });
     }
+
     private JPanel getLoginPanel(){
       return makeFormPanel(new String []{"Name", "PIN"}, new FormAction(){
         public void onSubmit(String [] inputs){
@@ -78,7 +104,9 @@ class ATMInterface {
             System.out.print(input + " ");
           }
           System.out.println();
+
           changeScreen("Menu");
+          // showError("DATABASES SUCKS ");
         }
       });
     }
