@@ -47,6 +47,41 @@ public class InterfaceHelper{
     return panel;
   }
 
+  public static void displayList(String listname,String [] items){
+    JFrame frame = new JFrame(listname);
+    frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    frame.setSize(200, 400);
+    JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+    JButton close = new JButton("Done");
+    close.addActionListener(new ActionListener(){
+      @Override
+      public void actionPerformed(ActionEvent e){
+        frame.dispose();
+      }
+    });
+
+
+
+    panel.add(Box.createVerticalGlue());
+    for(String item: items){
+
+      JLabel text = new JLabel(item);
+      text.setAlignmentX(Component.CENTER_ALIGNMENT);
+      text.setAlignmentY(Component.CENTER_ALIGNMENT);
+      panel.add(text);
+      panel.add(Box.createRigidArea(new Dimension(0,5)));
+
+    }
+
+    panel.add(close);
+    panel.add(Box.createVerticalGlue());
+
+    frame.getContentPane().add(panel);
+    frame.setVisible(true);
+  }
+
   public static void showError(String message){
     JFrame frame = new JFrame("ERROR");
     frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -98,5 +133,11 @@ public class InterfaceHelper{
           }
       });
     return button;
+  }
+
+  public static JPanel makeButtonPanel(String name,FormAction action){
+    JPanel panel = new JPanel();
+    panel.add(makeCenteredButton(name, action));
+    return panel;
   }
 }

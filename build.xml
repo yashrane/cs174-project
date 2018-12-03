@@ -24,6 +24,15 @@
         </java>
     </target>
 
+    <target name="teller">
+        <java classname="BankTellerInterface" fork = "true">
+            <classpath>
+                <pathelement path="build"/>
+                <pathelement location="lib/ojdbc6.jar"/>
+            </classpath>
+        </java>
+    </target>
+
     <target name="create">
         <java classname="LoadDB" fork = "true">
             <classpath>

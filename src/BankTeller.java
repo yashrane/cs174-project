@@ -8,22 +8,22 @@ public class BankTeller{
    * Writes a check for the given checking account
    * @param account the account id to withdraw from
    * @param amount the money to withdraw in dollars
-   * @return the check number for the check written
+   * @return the check number for the check written, or null if there was an error
    */
   public String write_check(String account, double amount){
     //verify that account is checking
     //use withdraw as helper function
     //generate check number
-    return "";
+    return null;
   }
 
   /**
    * Generate a monthly statement for all accounts owned by the given customer ID
    * @param taxID a customer id
-   * @return a string representing the monthly statement
+   * @return a string array representing the monthly statement
    */
-  public String generateMonthlyStatement(String taxID){ //NOTE: might need to change the return type to better suit the monthly statement
-    return "";
+  public String [] generateMonthlyStatement(String taxID){ //NOTE: might need to change the return type to better suit the monthly statement
+    return null;
   }
 
   /**
