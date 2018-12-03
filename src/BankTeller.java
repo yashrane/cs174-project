@@ -108,7 +108,8 @@ public class BankTeller{
    * Updates the date and adds interest if the date is past the end of the month
    */
   public void setDate(String date){//TODO: figure out how the hell this is gonna work
-
+    //update date
+    //update interest if end of month
   }
 
 }

@@ -35,6 +35,8 @@ public class ATM{
     return null;
   }
 
+
+
   /**
    * Withdraws the specified dollar amount from the given account
    * @param account the account id to withdraw from
@@ -44,6 +46,8 @@ public class ATM{
   public String withdraw(String account, double amount){
     return null;
   }
+
+
 
 
   /**
@@ -74,6 +78,38 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String transfer(String from_account, String to_account, double amount){
+    return null;
+  }
+
+  /**
+   * Transfer money to the specified pocket account from it's linked account.
+   * If it is the first transaction of the month with this account, apply a $5 fee
+   */
+  public String top_up(String account, double amount){
+    return null;
+  }
+
+  /**
+   * Move money from the specifed pocket account back to it's liked account. There is a 3% fee
+   * If it is the first transaction of the month with this account, apply a $5 fee
+   */
+  public String collect(String account, double amount){
+    return null;
+  }
+
+  /**
+   * Move money from the specifed pocket account to another pockey account.
+   * If it is the first transaction of the month with either account, apply a $5 fee to the relevant account
+   */
+  public String pay_friend(String from_account, String to_account, double amount){
+    return null;
+  }
+
+  /**
+   * Subtract money from the specified pocket account
+   * If it is the first transaction of the month with this account, apply a $5 fee
+   */
+  public String purchase(String account, double amount){
     return null;
   }
 

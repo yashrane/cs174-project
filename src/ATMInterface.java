@@ -25,23 +25,38 @@ class ATMInterface {
       // Text Area at the Center
       JTextArea ta = new JTextArea();
 
-      JLabel header = new JLabel("Welcome to the National Bank of Debt!");
+      JPanel header = new JPanel(new CardLayout());
+      header.add(new JLabel("Welcome to the National Bank of Debt!"), "Welcome");
+    
 
       cards = new JPanel(new CardLayout());
 
       JPanel login = getLoginPanel();
-      // JPanel menu = getMenuPanel();
-      String [] menuButtons = {"Deposit", "Withdraw", "Transfer"};
+      String [] menuButtons = {"Deposit","Top-up","Withdraw","Purchase", "Transfer", "Collect", "Wire", "Pay-friend"};
       JPanel menu = InterfaceHelper.getMenuPanel(menuButtons, new FormAction(){
         public void onSubmit(String [] inputs){
           changeScreen(inputs[0]);
         }
       });
       JPanel deposit = getDepositPanel();
+      JPanel top_up = getTopUpPanel();
+      JPanel withdraw = getWithdrawPanel();
+      JPanel purchase = getPurchasePanel();
+      JPanel transfer = getTransferPanel();
+      JPanel collect = getCollectPanel();
+      JPanel wire = getWirePanel();
+      JPanel pay_friend = getPayFriendPanel();
 
       cards.add(login, "Login");
       cards.add(menu, "Menu");
       cards.add(deposit, "Deposit");
+      cards.add(top_up, "Top-up");
+      cards.add(withdraw, "Withdraw");
+      cards.add(purchase, "Purchase");
+      cards.add(transfer, "Transfer");
+      cards.add(collect, "Collect");
+      cards.add(wire, "Wire");
+      cards.add(pay_friend, "Pay-friend");
 
 
 
@@ -87,6 +102,157 @@ class ATMInterface {
         }
       });
     }
+
+    private JPanel getTopUpPanel(){
+      return InterfaceHelper.makeFormPanel(new String []{"Account ID", "Amount to Top-up"}, new FormAction(){
+        public void onSubmit(String [] inputs){
+          try{
+            String id = inputs[0];
+            double amount = Double.parseDouble(inputs[1]);
+            String error = atm.top_up(id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
+          }
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
+        }
+      });
+    }
+
+    private JPanel getWithdrawPanel(){
+      return InterfaceHelper.makeFormPanel(new String []{"Account ID", "Amount to Withdraw"}, new FormAction(){
+        public void onSubmit(String [] inputs){
+          try{
+            String id = inputs[0];
+            double amount = Double.parseDouble(inputs[1]);
+            String error = atm.withdraw(id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
+          }
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
+        }
+      });
+    }
+
+    private JPanel getPurchasePanel(){
+      return InterfaceHelper.makeFormPanel(new String []{"Account ID", "Amount to Purchase"}, new FormAction(){
+        public void onSubmit(String [] inputs){
+          try{
+            String id = inputs[0];
+            double amount = Double.parseDouble(inputs[1]);
+            String error = atm.withdraw(id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
+          }
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
+        }
+      });
+    }
+
+    private JPanel getTransferPanel(){
+      return InterfaceHelper.makeFormPanel(new String []{"From Account", "To Account", "Amount to Transfer"}, new FormAction(){
+        public void onSubmit(String [] inputs){
+          try{
+            String from_id = inputs[0];
+            String to_id = inputs[1];
+            double amount = Double.parseDouble(inputs[2]);
+            String error = atm.transfer(from_id, to_id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
+          }
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
+        }
+      });
+    }
+
+    private JPanel getCollectPanel(){
+      return InterfaceHelper.makeFormPanel(new String []{"Account ID", "Amount to Collect"}, new FormAction(){
+        public void onSubmit(String [] inputs){
+          try{
+            String id = inputs[0];
+            double amount = Double.parseDouble(inputs[1]);
+            String error = atm.collect(id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
+          }
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
+        }
+      });
+    }
+
+    private JPanel getWirePanel(){
+      return InterfaceHelper.makeFormPanel(new String []{"From Account", "To Account", "Amount to Wire"}, new FormAction(){
+        public void onSubmit(String [] inputs){
+          try{
+            String from_id = inputs[0];
+            String to_id = inputs[1];
+            double amount = Double.parseDouble(inputs[2]);
+            String error = atm.wire(from_id, to_id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
+          }
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
+        }
+      });
+    }
+
+    private JPanel getPayFriendPanel(){
+      return InterfaceHelper.makeFormPanel(new String []{"From Account", "To Account", "Amount to Pay"}, new FormAction(){
+        public void onSubmit(String [] inputs){
+          try{
+            String from_id = inputs[0];
+            String to_id = inputs[1];
+            double amount = Double.parseDouble(inputs[2]);
+            String error = atm.pay_friend(from_id, to_id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
+          }
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
+        }
+      });
+    }
+
 
     private JPanel getLoginPanel(){
       return InterfaceHelper.makeFormPanel(new String []{"Name", "PIN"}, new FormAction(){
