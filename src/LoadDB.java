@@ -10,13 +10,14 @@ public class LoadDB{
     DatabaseConnection database = new DatabaseConnection();
 
     reset_database(database);
-    // drop_tables(database);
-    // create_tables(database);
+    drop_tables(database);
+    create_tables(database);
 
     populate_customers("res/customers.csv", database);
     populate_accounts("res/accounts.csv", database);
     populate_owns("res/owns.csv", database);
     populate_transactions("res/transactions.csv", database);
+    populate_interest("res/interest.csv", database);
   }
 
   public static void drop_tables(DatabaseConnection database){
@@ -24,6 +25,7 @@ public class LoadDB{
     database.execute_query("drop table transaction");
     database.execute_query("drop table account");
     database.execute_query("drop table customer");
+    database.execute_query("drop table interest");
   }
 
   public static void reset_database(DatabaseConnection database){
@@ -57,7 +59,6 @@ public class LoadDB{
   	  "type		CHAR(32),"+
   	  "balance		REAL,"+
       "bank_branch	CHAR(128),"+
-      "interest_rate		REAL,"+
       "a_id		CHAR(10),"+
       "isClosed		INTEGER,"+
       "linked_id		CHAR(10),"+
@@ -93,6 +94,13 @@ public class LoadDB{
       "FOREIGN KEY(paying_id) REFERENCES Account(a_id) ON DELETE CASCADE "+
     ")";
     database.execute_query(createTransactions);
+
+    String createInterest = "CREATE TABLE Interest("+
+        "type CHAR(32),"+
+        "interest_rate		REAL, "+
+        "PRIMARY KEY (type)"+
+    ")";
+    database.execute_query(createInterest);
   }
 
   public static void delete_from_tables(DatabaseConnection database, String tablename){
@@ -148,19 +156,18 @@ public class LoadDB{
         String type = parse(columns[1]);
         String branch = parse(columns[2]);
         String primary_owner = parse(columns[3]);
-        String interest_rate = parse(columns[4]);
-        String linked_id = parse(columns[5]);
-        String balance = parse(columns[6]);
+        String linked_id = parse(columns[4]);
+        String balance = parse(columns[5]);
 
         String query;
 
         if(linked_id.isEmpty()){
-          query = "insert into Account (a_id, type, bank_branch, PrimaryOwner, interest_rate, isClosed, balance ) values ('"+
-            id+"', '" + type + "', '" + branch + "', '" + primary_owner + "', " + interest_rate + ", 0,"+balance+")";
+          query = "insert into Account (a_id, type, bank_branch, PrimaryOwner, isClosed, balance ) values ('"+
+            id+"', '" + type + "', '" + branch + "', '" + primary_owner + "', 0,"+balance+")";
         }
         else{
-          query = "insert into Account (a_id, type, bank_branch, PrimaryOwner, interest_rate, isClosed, linked_id, balance ) values ('"+
-            id+"', '" + type + "', '" + branch + "', '" + primary_owner + "', " + interest_rate + ", 0, '" + linked_id +"', "+balance+")";
+          query = "insert into Account (a_id, type, bank_branch, PrimaryOwner,  isClosed, linked_id, balance ) values ('"+
+            id+"', '" + type + "', '" + branch + "', '" + primary_owner + "', 0, '" + linked_id +"', "+balance+")";
         }
 
         database.execute_query(query);
@@ -219,4 +226,27 @@ public class LoadDB{
       e.printStackTrace();
     }
   }
+
+  public static void populate_interest(String filename, DatabaseConnection database){
+    String line="";
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+      while ((line = br.readLine()) != null) {
+        String[] columns = line.split(",");
+
+        String type = "'" + parse(columns[0]) + "'";
+        String rate = parse(columns[1]);
+
+        String query = "insert into interest(type, interest_rate) values("+
+          type+", " + rate + ")";
+
+        database.execute_query(query);
+
+      }
+    }
+    catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+
 }

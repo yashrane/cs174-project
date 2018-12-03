@@ -96,4 +96,19 @@ public class BankTeller{
 
   }
 
+  /**
+   * Update the interest rate for the given account type
+   * @return an error message if applicable. null otherwise
+   */
+  public String updateInterest(String type, double rate){
+    return null;
+  }
+
+  /**
+   * Updates the date and adds interest if the date is past the end of the month
+   */
+  public void setDate(String date){//TODO: figure out how the hell this is gonna work
+
+  }
+
 }
