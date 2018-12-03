@@ -5,17 +5,18 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-interface FormAction{
-  public void onSubmit(String [] inputs);
-}
+
 
 class ATMInterface {
 
 
 
     JPanel cards;
+    private ATM atm;
 
     public ATMInterface(){
+      this.atm = new ATM();
+
       //Creating the Frame
       JFrame frame = new JFrame("Bank of Debts");
       frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -29,7 +30,13 @@ class ATMInterface {
       cards = new JPanel(new CardLayout());
 
       JPanel login = getLoginPanel();
-      JPanel menu = getMenuPanel();
+      // JPanel menu = getMenuPanel();
+      String [] menuButtons = {"Deposit", "Withdraw", "Transfer"};
+      JPanel menu = InterfaceHelper.getMenuPanel(menuButtons, new FormAction(){
+        public void onSubmit(String [] inputs){
+          changeScreen(inputs[0]);
+        }
+      });
       JPanel deposit = getDepositPanel();
 
       cards.add(login, "Login");
@@ -58,133 +65,43 @@ class ATMInterface {
         cl.show(this.cards, label);
     }
 
-    private void showError(String message){
-      JFrame frame = new JFrame("ERROR");
-      frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-      frame.setSize(200, 100);
-      JPanel panel = new JPanel();
-      panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-      JLabel error = new JLabel(message);
-      error.setAlignmentX(Component.CENTER_ALIGNMENT);
-      error.setAlignmentY(Component.CENTER_ALIGNMENT);
-      JButton close = new JButton("OK");
-      close.addActionListener(new ActionListener(){
-        @Override
-        public void actionPerformed(ActionEvent e){
-          frame.dispose();
-        }
-      });
 
-      panel.add(Box.createVerticalGlue());
-      panel.add(error);
-      panel.add(Box.createRigidArea(new Dimension(0,5)));
-      panel.add(close);
-      panel.add(Box.createVerticalGlue());
-
-      frame.getContentPane().add(panel);
-      frame.setVisible(true);
-    }
 
     private JPanel getDepositPanel(){
-      return makeFormPanel(new String []{"Account ID", "Amount to Deposit"}, new FormAction(){
+      return InterfaceHelper.makeFormPanel(new String []{"Account ID", "Amount to Deposit"}, new FormAction(){
         public void onSubmit(String [] inputs){
-          for(String input: inputs){
-            System.out.print(input + " ");
+          try{
+            String id = inputs[0];
+            double amount = Double.parseDouble(inputs[1]);
+            String error = atm.deposit(id, amount);
+            if(error == null){
+              changeScreen("Menu");
+            }
+            else{
+              InterfaceHelper.showError(error);
+            }
           }
-          System.out.println();
-          changeScreen("Menu");
+          catch(java.lang.NumberFormatException e){
+            InterfaceHelper.showError("Invalid input");
+          }
         }
       });
     }
 
     private JPanel getLoginPanel(){
-      return makeFormPanel(new String []{"Name", "PIN"}, new FormAction(){
+      return InterfaceHelper.makeFormPanel(new String []{"Name", "PIN"}, new FormAction(){
         public void onSubmit(String [] inputs){
-          for(String input: inputs){
-            System.out.print(input + " ");
-          }
-          System.out.println();
+          String name = inputs[0];
+          String pin = inputs[1];
 
-          changeScreen("Menu");
-          // showError("DATABASES SUCKS ");
+          if(atm.login(name, pin)){
+              changeScreen("Menu");
+          }
+          else{
+              InterfaceHelper.showError("Name or PIN invalid");
+          }
         }
       });
-    }
-
-
-    private JPanel getMenuPanel(){
-      JPanel panel = new JPanel();
-      panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-      JButton deposit = makeCenteredButton("Deposit");
-      JButton withdraw = makeCenteredButton("Withdraw");
-      JButton transfer = makeCenteredButton("Transfer");
-
-      panel.add(Box.createVerticalGlue());
-      panel.add(deposit);
-      panel.add(Box.createRigidArea(new Dimension(0,5)));
-      panel.add(withdraw);
-      panel.add(Box.createRigidArea(new Dimension(0,5)));
-      panel.add(transfer);
-      panel.add(Box.createVerticalGlue());
-      return panel;
-    }
-
-    private JButton makeCenteredButton(String name){
-      JButton button = new JButton(name);
-      button.setAlignmentX(Component.CENTER_ALIGNMENT);
-      button.setAlignmentY(Component.CENTER_ALIGNMENT);
-      button.setPreferredSize(new Dimension(400,30));
-      button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-              changeScreen(name);
-            }
-        });
-      return button;
-    }
-
-
-
-
-    public JPanel makeFormPanel(String [] forms, FormAction form){
-      JPanel panel = new JPanel();
-      panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-      JPanel submitpanel = new JPanel();
-      JButton submit = new JButton("Submit");
-
-      JTextField [] fields = new JTextField[forms.length];
-
-      submit.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-              String [] inputs = new String [fields.length];
-              for(int i =0;i<fields.length;i++){
-                inputs[i] = fields[i].getText();
-              }
-              form.onSubmit(inputs);
-            }
-        });
-
-
-      panel.add(Box.createVerticalGlue());
-
-      for(int i=0;i<forms.length;i++){
-        String f = forms[i];
-        JPanel temppanel = new JPanel();
-        JTextField tempfield = new JTextField(16);
-        temppanel.add(new JLabel(f));
-        temppanel.add(tempfield);
-        panel.add(temppanel);
-        panel.add(Box.createRigidArea(new Dimension(0,5)));
-        fields[i] = tempfield;
-      }
-
-      submitpanel.add(submit);
-      panel.add(submitpanel);
-
-      panel.add(Box.createVerticalGlue());
-
-      return panel;
     }
 
 }
