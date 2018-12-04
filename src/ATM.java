@@ -1,8 +1,7 @@
 public class ATM{
 
-  private:
-    String current_user;
-    DatabaseConnection database;
+  private String current_user;
+  private DatabaseConnection database;
 
   public ATM(){
     this.database = new DatabaseConnection();
@@ -16,14 +15,15 @@ public class ATM{
    */
   public boolean login(String name, String pin){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Account where name ="+name+" and pin="+pin)//return a result set
-      if(!rs.next()) {
-        return false;
+      ResultSet rs = database.execute_query("SELECT * FROM Customer where name ="+name+" and pin="+pin)//return a result set
+      if(rs.next()) {
+        current_user = rs.getString("taxID");
+        return true;
       }
     }catch(SQLException e){
       e.printStackTrace();
     }
-    return true;
+    return false;
   }
 
   /**
@@ -43,26 +43,33 @@ public class ATM{
    * Deposits the specified dollar amount in the given account
    * @param account the account id to depost into
    * @param amount the money to deposit in dollars
+   * @return an error message if applicable. null otherwise
    */
-  public void deposit(String account, double amount){
-    return;
+  public String deposit(String account, double amount){
+    return null;
   }
+
+
 
   /**
    * Withdraws the specified dollar amount from the given account
    * @param account the account id to withdraw from
    * @param amount the money to withdraw in dollars
+   * @return an error message if applicable. null otherwise
    */
-  public void withdraw(String account, double amount){
-    return;
+  public String withdraw(String account, double amount){
+    return null;
   }
+
+
 
 
   /**
    * Helper function for all tranactions that transfer money from one account to the other
+   * @return an error message if applicable. null otherwise
    */
-  private void transfer_helper(String from_account, String to_account, double amount){
-
+  private String transfer_helper(String from_account, String to_account, double amount){
+    return null;
   }
 
   /**
@@ -70,9 +77,10 @@ public class ATM{
    * @param from_account the account to take money from
    * @param to_account the account to send money to
    * @param amount the money to wire in dollars
+   * @return an error message if applicable. null otherwise
    */
-  public void wire(String from_account, String to_account, double amount){
-
+  public String wire(String from_account, String to_account, double amount){
+    return null;
   }
 
   /**
@@ -81,23 +89,44 @@ public class ATM{
    * @param from_account the account to take money from
    * @param to_account the account to send money to
    * @param amount the money to wire in dollars
+   * @return an error message if applicable. null otherwise
    */
-  public void transfer(String from_account, String to_account, double amount){
-
+  public String transfer(String from_account, String to_account, double amount){
+    return null;
   }
 
   /**
-   * Writes a check for the given checking account
-   * @param account the account id to withdraw from
-   * @param amount the money to withdraw in dollars
-   * @return the check number for the check written
+   * Transfer money to the specified pocket account from it's linked account.
+   * If it is the first transaction of the month with this account, apply a $5 fee
    */
-  public String write_check(String account, double amount){
-    //verify that account is checking
-    //use withdraw as helper function
-    //generate check number
-    return "";
+  public String top_up(String account, double amount){
+    return null;
   }
+
+  /**
+   * Move money from the specifed pocket account back to it's liked account. There is a 3% fee
+   * If it is the first transaction of the month with this account, apply a $5 fee
+   */
+  public String collect(String account, double amount){
+    return null;
+  }
+
+  /**
+   * Move money from the specifed pocket account to another pockey account.
+   * If it is the first transaction of the month with either account, apply a $5 fee to the relevant account
+   */
+  public String pay_friend(String from_account, String to_account, double amount){
+    return null;
+  }
+
+  /**
+   * Subtract money from the specified pocket account
+   * If it is the first transaction of the month with this account, apply a $5 fee
+   */
+  public String purchase(String account, double amount){
+    return null;
+  }
+
 
   // TODO: figure out how this works
   public void log_transaction(){
