@@ -1,3 +1,6 @@
+import java.util.*;
+import java.sql.*;
+
 public class ATM{
 
   private String current_user;
@@ -15,7 +18,7 @@ public class ATM{
    */
   public boolean login(String name, String pin){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Customer where name ="+name+" and pin="+pin)//return a result set
+      ResultSet rs = database.execute_query("SELECT * FROM Customer WHERE name = "+name+" AND pin= "+pin); //return a result set
       if(rs.next()) {
         current_user = rs.getString("taxID");
         return true;
@@ -32,11 +35,19 @@ public class ATM{
    */
   public String[] get_accounts(){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Owns where taxID ="+taxID)//return a result set
+      ResultSet rs = database.execute_query("SELECT * FROM Owns WHERE taxID = "+current_user); //return a result set
+      ArrayList al = new ArrayList();
+      while(rs.next()) {
+        String id = rs.getString("a.id");
+        al.add(id);
+      }
+      String[] a = new String[al.size()];
+      al.toArray(a);
+      return a;
     }catch(SQLException e){
       e.printStackTrace();
     }
-    return rs;
+    return null;
   }
 
   /**
@@ -46,6 +57,11 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String deposit(String account, double amount){
+    // try{
+    //   ResultSet rs = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id = "+account+" AND (type= 'Student-Checkings' OR type= 'Interest-Checkings' OR type= 'Savings')");
+    // }catch(SQLException e){
+    //   e.printStackTrace();
+    // }
     return null;
   }
 
@@ -58,6 +74,12 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String withdraw(String account, double amount){
+    // try{
+    //   ResultSet rs = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id = "+account+" AND (type= 'Student-Checkings' OR type= 'Interest-Checkings' OR type= 'Savings')");
+    //   //if(balance <= 0.01) then close;
+    // }catch(SQLException e){
+    //   e.printStackTrace();
+    // }
     return null;
   }
 
@@ -69,6 +91,13 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   private String transfer_helper(String from_account, String to_account, double amount){
+    // try{
+    //   ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id = "+from_account);
+    //   ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id = "+to_account);
+    //   //if(balance <= 0.01) then close;
+    // }catch(SQLException e){
+    //   e.printStackTrace();
+    // }
     return null;
   }
 
@@ -80,11 +109,21 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String wire(String from_account, String to_account, double amount){
+    try{
+      ResultSet rs = database.execute_query("SELECT * FROM Account WHERE PrimaryOwner = "+current_user+" AND a_id= "+from_account);
+      if(rs.next()) {
+        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id = "+from_account+" AND (type= 'Student-Checkings' OR type= 'Interest-Checkings' OR type= 'Savings')");
+        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.98*amount)+" WHERE a_id = "+to_account+" AND (type= 'Student-Checkings' OR type= 'Interest-Checkings' OR type= 'Savings')");
+      }
+      //if(balance <= 0.01) then close;
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
     return null;
   }
 
   /**
-   * Wires money from one account to the other. accounts must have at least one
+   * Transfers money from one account to the other. accounts must have at least one
    * owner in common. amount cannot exceed $2000
    * @param from_account the account to take money from
    * @param to_account the account to send money to
@@ -92,6 +131,16 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String transfer(String from_account, String to_account, double amount){
+    if(amount <= 2000){ //amount cannot exceed $2000
+      try{
+        ResultSet rs = database.execute_query("SELECT * FROM Owns WHERE (taxID = "+current_user+" AND a_id= "+from_account+" AND (type= 'Student-Checkings' OR type= 'Interest-Checkings' OR type= 'Savings'+) AND (taxID = "+current_user+" AND a_id= "+to_account+" AND (type= 'Student-Checkings' OR type= 'Interest-Checkings' OR type= 'Savings')"); //accounts must have at least one owner in common
+        if(rs.next()) {
+            String wire = transfer_helper(from_account, to_account, amount);
+        }
+      }catch(SQLException e){
+        e.printStackTrace();
+      }
+    }
     return null;
   }
 
@@ -112,7 +161,7 @@ public class ATM{
   }
 
   /**
-   * Move money from the specifed pocket account to another pockey account.
+   * Move money from the specifed pocket account to another pocket account.
    * If it is the first transaction of the month with either account, apply a $5 fee to the relevant account
    */
   public String pay_friend(String from_account, String to_account, double amount){
@@ -133,6 +182,10 @@ public class ATM{
 
   }
 
+  /**
+   * Subtract money from the specified pocket account
+   * If it is the first transaction of the month with this account, apply a $5 fee
+   */
 
   //NOTE: functions for top-up, collect, pay-friend have not been written
 
