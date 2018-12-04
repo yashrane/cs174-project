@@ -89,7 +89,7 @@ public class BankTeller{
    * @param linked_id the linked account id, if applicable. null otherwise
    * @return the new account id
    */
-  public String createAccount(String primary_owner, String [] owner_ids, double initial_balance, String type, String branch. String linked_id){
+  public String createAccount(String primary_owner, String [] owner_ids, double initial_balance, String type, String branch, String linked_id){
     //create new entry in account
     //create new entry for the initial transaction
     //create new entries for owns
