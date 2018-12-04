@@ -1,4 +1,5 @@
 import java.sql.*;
+import java.util.*;
 
 public class BankTeller{
   private DatabaseConnection database;
@@ -18,16 +19,22 @@ public class BankTeller{
    */
   public String write_check(String account, double amount){
     //verify that account is checking
-    ResultSet rs = database.execute_query("select type,balance from account where account.a_id = " + parse(account));
-    if(rs.next() && rs.getString("type").matches(".*Checking")){
-      double balance = rs.getDouble(balance);
-      String error = atm.withdraw(account, balance);
-      if(error == null){
-        String checkid = generateRandomChars(20);
-        atm.log_transaction(amount, "write-check", checkid, account, "");
-        return checkid;
+    try{
+      ResultSet rs = database.execute_query("select type,balance from account where account.a_id = " + LoadDB.parse(account));
+      if(rs.next() && rs.getString("type").matches(".*Checking")){
+        double balance = rs.getDouble("balance");
+        String error = atm.withdraw(account, balance);
+        if(error == null){
+          String checkid = generateRandomChars(20);
+          atm.log_transaction(amount, "write-check", checkid, account, "");
+          return checkid;
+        }
       }
     }
+    catch(SQLException e){
+
+    }
+
     return null;
   }
 
@@ -50,7 +57,7 @@ public class BankTeller{
       String statement = "----------------\nAccount ID: " + a_id + "\n";
       ResultSet owns = database.execute_query("select C.name, C.address from Customer C, Owns O where O.a_id = " + LoadDB.parse(a_id) + " and C.taxID="+taxID );
       statement+=getOwnerList(owns);
-      ResultSet transactions = database.execute_query("select type, date, amount from transaction where paying_id="LoadDB.parse(a_id) + " or receiving_id="+LoadDB.parse(a_id));
+      ResultSet transactions = database.execute_query("select type, date, amount from transaction where paying_id="+LoadDB.parse(a_id) + " or receiving_id="+LoadDB.parse(a_id));
       statement+=getTransactionList(transactions);
     }
 
@@ -58,8 +65,8 @@ public class BankTeller{
   }
   private String getOwnerList(ResultSet owners){
     String list = "Owners:\n";
-    String [] names = parseResultSet(owns, "name");
-    String [] address = parseResultSet(owns, "address");
+    String [] names = parseResultSet(owners, "name");
+    String [] address = parseResultSet(owners, "address");
     for(int i=0;i<names.length;i++){
       list += names[i] + " : " + address[i] + "\n";
     }
@@ -215,21 +222,21 @@ public class BankTeller{
     }catch(SQLException e){
       e.printStackTrace();
     }
+    return null;
   }
-
-  public double[] parseResultSet(ResultSet rs, String key){
-    try{
-      ArrayList al = new ArrayList();
-      while(rs.next()) {
-        double id = rs.getString(key);
-        al.add(id);
-      }
-      double[] a = new double[al.size()];
-      al.toArray(a);
-      return a;
-    }catch(SQLException e){
-      e.printStackTrace();
-    }
-  }
+  // public double[] parseResultSet(ResultSet rs, String key){
+  //   try{
+  //     ArrayList al = new ArrayList();
+  //     while(rs.next()) {
+  //       double id = rs.getDouble(key);
+  //       al.add(id);
+  //     }
+  //     double[] a = new double[al.size()];
+  //     al.toArray(a);
+  //     return a;
+  //   }catch(SQLException e){
+  //     e.printStackTrace();
+  //   }
+  // }
 
 }
