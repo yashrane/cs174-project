@@ -51,22 +51,50 @@ public class BankTeller{
     taxID = LoadDB.parse(taxID);
 
 
-    ResultSet rs = database.execute_query("select a_id from account where primary_owner = "+taxID);
-    String [] accounts = parseResultSet(rs, "a_id");
-    for(String a_id : accounts){
-      String statement = "----------------\nAccount ID: " + a_id + "\n";
-      ResultSet owns = database.execute_query("select C.name, C.address from Customer C, Owns O where O.a_id = " + LoadDB.parse(a_id) + " and C.taxID="+taxID );
+    ResultSet rs = database.execute_query("select a_id,balance from account where PrimaryOwner = "+taxID);
+    String [] accounts = parseResultSetString(rs, "a_id");
+    double [] balances = parseResultSetDouble(rs, "balance");
+    double totalBalance=0.0;
+    for(int i=0;i<accounts.length;i++){
+      String a_id = accounts[i];
+      double balance = balances[i];
+      totalBalance+=balance;
+      String statement = "Account ID: " + a_id + "\n";
+
+      ResultSet owns = database.execute_query("select C.name, C.address from Customer C, Owns O where O.a_id = " + LoadDB.parse(a_id) + " and C.taxID= O.taxID");
+      ResultSet pos_transactions = database.execute_query("select type, timestamp, amount from transaction where receiving_id="+LoadDB.parse(a_id));
+      ResultSet neg_transactions = database.execute_query("select type, timestamp, amount from transaction where paying_id="+LoadDB.parse(a_id));
+
       statement+=getOwnerList(owns);
-      ResultSet transactions = database.execute_query("select type, date, amount from transaction where paying_id="+LoadDB.parse(a_id) + " or receiving_id="+LoadDB.parse(a_id));
-      statement+=getTransactionList(transactions);
+
+      statement+= "Initial Balance: $" + calculateInitialBalance(pos_transactions, neg_transactions, balance) + "\n";
+
+      statement+="Positive Transactions:\n";
+      statement+=getTransactionList(pos_transactions);
+      statement+="Negative Transactions:\n";
+      statement+=getTransactionList(neg_transactions);
+
+      statement+="Final Balance: $" + balance + "\n";
+
+
+      statement+="\n";
+      statements.add(statement);
+    }
+    if(totalBalance > 100000.0){
+      statements.add("WARNING: Total balance exceeds $100,000. Insurance limit reached.");
+    }
+    if(statements.size() == 0){
+      statements.add("No accounts found.");
     }
 
-    return null;
+    String [] s = new String [statements.size()];
+    statements.toArray(s);
+    return s;
   }
   private String getOwnerList(ResultSet owners){
     String list = "Owners:\n";
-    String [] names = parseResultSet(owners, "name");
-    String [] address = parseResultSet(owners, "address");
+    String [] names = parseResultSetString(owners, "name");
+    String [] address = parseResultSetString(owners, "address");
     for(int i=0;i<names.length;i++){
       list += names[i] + " : " + address[i] + "\n";
     }
@@ -74,15 +102,26 @@ public class BankTeller{
     return list;
   }
   private String getTransactionList(ResultSet transactions){
-    String list = "Transactions:\n";
-    // String [] types = parseResultSet(owns, "type");
-    // String [] dates = parseResultSet(owns, "date");
-    // String [] dates = parseResultSet(owns, "amount");
-    // for(int i=0;i<names.length;i++){
-    //   list += names[i] + " : " + address[i] + "\n";
-    // }
+    String list = "";
+    String [] types = parseResultSetString(transactions, "type");
+    String [] dates = parseResultSetString(transactions, "timestamp");
+    double [] amounts = parseResultSetDouble(transactions, "amount");
+    for(int i=0;i<types.length;i++){
+      list += dates[i] + "\t$" + amounts[i]+ "\t" + types[i] + "\n";
+    }
     list+="\n";
     return list;
+  }
+  private double calculateInitialBalance(ResultSet pos_transactions, ResultSet neg_transactions, double inital){
+    double [] pos = parseResultSetDouble(pos_transactions, "amount");
+    for(double p : pos){
+      inital -= p;
+    }
+    double [] neg = parseResultSetDouble(neg_transactions, "amount");
+    for(double n : neg){
+      inital += n;
+    }
+    return inital;
   }
 
 
@@ -91,7 +130,12 @@ public class BankTeller{
    * @return an array of account ids
    */
   public String [] listClosedAccounts(){
-    return null;
+    String query = "select a_id from account where isClosed=1 and "+
+      "exists(select a_id from transaction where (paying_id=a_id or receiving_id=a_id) and"+
+        " extract(month from timestamp) = (select MAX(extract(month from timestamp)) from currentdate))";
+    ResultSet rs = database.execute_query(query);
+
+    return parseResultSetString(rs, "a_id");
   }
 
   /**
@@ -209,13 +253,14 @@ public class BankTeller{
     return sb.toString();
   }
 
-  public String[] parseResultSet(ResultSet rs, String key){
+  public String[] parseResultSetString(ResultSet rs, String key){
     try{
       ArrayList al = new ArrayList();
       while(rs.next()) {
         String id = rs.getString(key);
-        al.add(id);
+        al.add(id.trim());
       }
+      rs.beforeFirst();
       String[] a = new String[al.size()];
       al.toArray(a);
       return a;
@@ -224,19 +269,23 @@ public class BankTeller{
     }
     return null;
   }
-  // public double[] parseResultSet(ResultSet rs, String key){
-  //   try{
-  //     ArrayList al = new ArrayList();
-  //     while(rs.next()) {
-  //       double id = rs.getDouble(key);
-  //       al.add(id);
-  //     }
-  //     double[] a = new double[al.size()];
-  //     al.toArray(a);
-  //     return a;
-  //   }catch(SQLException e){
-  //     e.printStackTrace();
-  //   }
-  // }
+  public double[] parseResultSetDouble(ResultSet rs, String key){
+    try{
+      ArrayList<Double> al = new ArrayList<Double>();
+      while(rs.next()) {
+        Double id = rs.getDouble(key);
+        al.add(id);
+      }
+      rs.beforeFirst();
+      double[] a = new double[al.size()];
+      for (int i = 0; i < a.length; i++) {
+         a[i] = al.get(i);
+       }
+      return a;
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
+    return null;
+  }
 
 }

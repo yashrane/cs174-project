@@ -33,7 +33,7 @@ public class DatabaseConnection{
 		Statement stmt = null;
     ResultSet rs = null;
     try{
-      stmt = this.conn.createStatement();
+      stmt = this.conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
       rs = stmt.executeQuery(query);
     }
     catch(Exception e){
