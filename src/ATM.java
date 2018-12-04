@@ -16,7 +16,16 @@ public class ATM{
    * @return whether the pin is valid for the given user
    */
   public boolean login(String name, String pin){
-    return true;
+    try{
+      ResultSet rs = database.execute_query("SELECT * FROM Customer where name ="+name+" and pin="+pin)//return a result set
+      if(rs.next()) {
+        current_user = rs.getString("taxID");
+        return true;
+      }
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
+    return false;
   }
 
   /**
@@ -24,7 +33,12 @@ public class ATM{
    * @return an array of string account ids
    */
   public String[] get_accounts(){
-    return null;
+    try{
+      ResultSet rs = database.execute_query("SELECT * FROM Owns where taxID ="+taxID)//return a result set
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
+    return rs;
   }
 
   /**
