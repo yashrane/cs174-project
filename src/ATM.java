@@ -1,3 +1,5 @@
+import java.sql.*;
+
 public class ATM{
 
   private String current_user;
@@ -17,7 +19,7 @@ public class ATM{
    */
   public boolean login(String name, String pin){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Customer where name ="+name+" and pin="+pin)//return a result set
+      ResultSet rs = database.execute_query("SELECT * FROM Customer where name ="+name+" and pin="+pin);//return a result set
       if(rs.next()) {
         current_user = rs.getString("taxID");
         return true;
@@ -34,7 +36,7 @@ public class ATM{
    */
   public String[] get_accounts(){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Owns where taxID ="+taxID)//return a result set
+      ResultSet rs = database.execute_query("SELECT * FROM Owns where taxID ="+taxID);//return a result set
     }catch(SQLException e){
       e.printStackTrace();
     }

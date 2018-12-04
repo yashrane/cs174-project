@@ -115,7 +115,7 @@ public class LoadDB{
   }
 
   public static String parse(String s){
-    return s.replace("'", "''");
+    return "'" + s.replace("'", "''") + "'";
   }
 
   public static String parseNULL(String s){
@@ -123,7 +123,7 @@ public class LoadDB{
       return "NULL";
     }
     else{
-      return "'" + parse(s) + "'";
+      return parse(s);
     }
   }
 
@@ -140,8 +140,8 @@ public class LoadDB{
         String address = parse(columns[2]);
         String pin = parse(columns[3]);
 
-        String query = "insert into Customer (name, taxID, address, pin) values ('"+
-          name+"', '" + taxID + "', '" + address + "', '" + pin + "')";
+        String query = "insert into Customer (name, taxID, address, pin) values ("+
+          name+", " + taxID + ", " + address + ", " + pin + ")";
 
         database.execute_query(query);
 
@@ -162,19 +162,12 @@ public class LoadDB{
         String type = parse(columns[1]);
         String branch = parse(columns[2]);
         String primary_owner = parse(columns[3]);
-        String linked_id = parse(columns[4]);
+        String linked_id = parseNULL(columns[4]);
         String balance = parse(columns[5]);
 
-        String query;
+        String query = "insert into Account (a_id, type, bank_branch, PrimaryOwner,  isClosed, linked_id, balance ) values ("+
+            id+", " + type + ", " + branch + ", " + primary_owner + ", 0, " + linked_id +", "+balance+")";
 
-        if(linked_id.isEmpty()){
-          query = "insert into Account (a_id, type, bank_branch, PrimaryOwner, isClosed, balance ) values ('"+
-            id+"', '" + type + "', '" + branch + "', '" + primary_owner + "', 0,"+balance+")";
-        }
-        else{
-          query = "insert into Account (a_id, type, bank_branch, PrimaryOwner,  isClosed, linked_id, balance ) values ('"+
-            id+"', '" + type + "', '" + branch + "', '" + primary_owner + "', 0, '" + linked_id +"', "+balance+")";
-        }
 
         database.execute_query(query);
 
@@ -194,8 +187,8 @@ public class LoadDB{
         String tax_id = parse(columns[0]);
         String aid = parse(columns[1]);
 
-        String query = "insert into Owns (taxID, a_id) values ('"+
-          tax_id+"', '" + aid + "')";
+        String query = "insert into Owns (taxID, a_id) values ("+
+          tax_id+", " + aid + ")";
 
         database.execute_query(query);
 
@@ -212,10 +205,10 @@ public class LoadDB{
       while ((line = br.readLine()) != null) {
         String[] columns = line.split(",");
 
-        String t_id = "'" + parse(columns[0]) + "'";
-        String amount = parse(columns[1]);
-        String type = "'" +  parse(columns[2]) + "'";
-        String date = "TO_DATE('" + parse(columns[3]) + "', 'YYYY-MM-DD')";
+        String t_id =parse(columns[0]);
+        String amount = columns[1];
+        String type = parse(columns[2]);
+        String date = "TO_DATE(" + parse(columns[3]) + ", 'YYYY-MM-DD')";
         String check_no = parseNULL(columns[4]);
         String paying_id = parseNULL(columns[5]);
         String receiving_id = parseNULL(columns[6]);
@@ -239,8 +232,8 @@ public class LoadDB{
       while ((line = br.readLine()) != null) {
         String[] columns = line.split(",");
 
-        String type = "'" + parse(columns[0]) + "'";
-        String rate = parse(columns[1]);
+        String type =parse(columns[0]);
+        String rate = columns[1];
 
         String query = "insert into interest(type, interest_rate) values("+
           type+", " + rate + ")";
@@ -255,7 +248,7 @@ public class LoadDB{
   }
 
   public static void populate_date(String date, DatabaseConnection database){
-    String query = "insert into currentdate(timestamp) values(TO_DATE('" + date + "', 'YYYY-MM-DD')" + ")";
+    String query = "insert into currentdate(timestamp) values(TO_DATE(" + parse(date) + ", 'YYYY-MM-DD')" + ")";
     database.execute_query(query);
   }
 

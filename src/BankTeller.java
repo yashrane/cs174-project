@@ -18,27 +18,66 @@ public class BankTeller{
    */
   public String write_check(String account, double amount){
     //verify that account is checking
-    ResultSet rs = database.execute_query("select type,balance from account where account.a_id = " + account);
+    ResultSet rs = database.execute_query("select type,balance from account where account.a_id = " + parse(account));
     if(rs.next() && rs.getString("type").matches(".*Checking")){
       double balance = rs.getDouble(balance);
-      atm.withdraw(account, balance);
-      String checkid = generateRandomChars(20);
-      // database.execute_query("");
-      return "";
+      String error = atm.withdraw(account, balance);
+      if(error == null){
+        String checkid = generateRandomChars(20);
+        atm.log_transaction(amount, "write-check", checkid, account, "");
+        return checkid;
+      }
     }
-    //use withdraw as helper function
-    //generate check number
     return null;
   }
 
+
+//TODO
   /**
    * Generate a monthly statement for all accounts owned by the given customer ID
    * @param taxID a customer id
    * @return a string array representing the monthly statement
    */
   public String [] generateMonthlyStatement(String taxID){ //NOTE: might need to change the return type to better suit the monthly statement
+
+    ArrayList<String> statements = new ArrayList<String>();
+    taxID = LoadDB.parse(taxID);
+
+
+    ResultSet rs = database.execute_query("select a_id from account where primary_owner = "+taxID);
+    String [] accounts = parseResultSet(rs, "a_id");
+    for(String a_id : accounts){
+      String statement = "----------------\nAccount ID: " + a_id + "\n";
+      ResultSet owns = database.execute_query("select C.name, C.address from Customer C, Owns O where O.a_id = " + LoadDB.parse(a_id) + " and C.taxID="+taxID );
+      statement+=getOwnerList(owns);
+      ResultSet transactions = database.execute_query("select type, date, amount from transaction where paying_id="LoadDB.parse(a_id) + " or receiving_id="+LoadDB.parse(a_id));
+      statement+=getTransactionList(transactions);
+    }
+
     return null;
   }
+  private String getOwnerList(ResultSet owners){
+    String list = "Owners:\n";
+    String [] names = parseResultSet(owns, "name");
+    String [] address = parseResultSet(owns, "address");
+    for(int i=0;i<names.length;i++){
+      list += names[i] + " : " + address[i] + "\n";
+    }
+    list+="\n";
+    return list;
+  }
+  private String getTransactionList(ResultSet transactions){
+    String list = "Transactions:\n";
+    // String [] types = parseResultSet(owns, "type");
+    // String [] dates = parseResultSet(owns, "date");
+    // String [] dates = parseResultSet(owns, "amount");
+    // for(int i=0;i<names.length;i++){
+    //   list += names[i] + " : " + address[i] + "\n";
+    // }
+    list+="\n";
+    return list;
+  }
+
 
   /**
    * List all accounts that have closed in the last month
@@ -89,7 +128,7 @@ public class BankTeller{
    * @param linked_id the linked account id, if applicable. null otherwise
    * @return the new account id
    */
-  public String createAccount(String primary_owner, String [] owner_ids, double initial_balance, String type, String branch. String linked_id){
+  public String createAccount(String primary_owner, String [] owner_ids, double initial_balance, String type, String branch, String linked_id){
     //create new entry in account
     //create new entry for the initial transaction
     //create new entries for owns
@@ -161,6 +200,36 @@ public class BankTeller{
     }
 
     return sb.toString();
+  }
+
+  public String[] parseResultSet(ResultSet rs, String key){
+    try{
+      ArrayList al = new ArrayList();
+      while(rs.next()) {
+        String id = rs.getString(key);
+        al.add(id);
+      }
+      String[] a = new String[al.size()];
+      al.toArray(a);
+      return a;
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
+  }
+
+  public double[] parseResultSet(ResultSet rs, String key){
+    try{
+      ArrayList al = new ArrayList();
+      while(rs.next()) {
+        double id = rs.getString(key);
+        al.add(id);
+      }
+      double[] a = new double[al.size()];
+      al.toArray(a);
+      return a;
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
   }
 
 }
