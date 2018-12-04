@@ -18,6 +18,7 @@ public class LoadDB{
     populate_owns("res/owns.csv", database);
     populate_transactions("res/transactions.csv", database);
     populate_interest("res/interest.csv", database);
+    populate_date("2018-12-3", database);
   }
 
   public static void drop_tables(DatabaseConnection database){
@@ -101,6 +102,11 @@ public class LoadDB{
         "PRIMARY KEY (type)"+
     ")";
     database.execute_query(createInterest);
+
+    String createDate = "CREATE TABLE CurrentDate("+
+        "timestamp DATE"+
+    ")";
+    database.execute_query(createDate);
   }
 
   public static void delete_from_tables(DatabaseConnection database, String tablename){
@@ -113,7 +119,7 @@ public class LoadDB{
   }
 
   public static String parseNULL(String s){
-    if(s.isEmpty()){
+    if(s ==null || s.isEmpty()){
       return "NULL";
     }
     else{
@@ -246,6 +252,11 @@ public class LoadDB{
     catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static void populate_date(String date, DatabaseConnection database){
+    String query = "insert into currentdate(timestamp) values(TO_DATE('" + date + "', 'YYYY-MM-DD')" + ")";
+    database.execute_query(query);
   }
 
 

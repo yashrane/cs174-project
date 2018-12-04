@@ -5,9 +5,11 @@ public class ATM{
 
   private String current_user;
   private DatabaseConnection database;
+  private String currentDate;
 
   public ATM(){
     this.database = new DatabaseConnection();
+    this.currentDate = getDate();
   }
 
   /**
@@ -178,8 +180,19 @@ public class ATM{
 
 
   // TODO: figure out how this works
-  public void log_transaction(){
+  public void log_transaction(double amount, String type, String check_no, String paying_id, String receiving_id){
 
+    String t_id = "'" + generateRandomChars(10) + "'";
+    type = "'" +  type + "'";
+    String date = "TO_DATE('" + currentDate + "', 'YYYY-MM-DD')";
+    check_no = LoadDB.parseNULL(check_no);
+    paying_id = LoadDB.parseNULL(paying_id);
+    receiving_id = LoadDB.parseNULL(receiving_id);
+
+    String query = "insert into transaction(t_id, amount, type, timestamp, check_no, paying_id, receiving_id) values("+
+      t_id+", " + amount+", " + type+", " + currentDate+", " + check_no+", " + paying_id+", " + receiving_id + ")";
+
+    database.execute_query(query);
   }
 
   /**
@@ -187,8 +200,34 @@ public class ATM{
    * If it is the first transaction of the month with this account, apply a $5 fee
    */
 
-  //NOTE: functions for top-up, collect, pay-friend have not been written
+  /**
+   * Updates the date and adds interest if the date is past the end of the month
+   */
+  public String getDate(){
+    try{
+      ResultSet rs = database.execute_query("select timestamp from CurrentDate");
+      if(rs.next()){
+        String date = rs.getString("timestamp");
+        System.out.println(date);
+        return date;
+      }
+    }
+    catch(SQLException e){
+      e.printStackTrace();
+    }
+    return null;
+  }
 
+  public static String generateRandomChars(int length) {
+    String candidateChars  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    StringBuilder sb = new StringBuilder();
+    Random random = new Random();
+    for (int i = 0; i < length; i++) {
+        sb.append(candidateChars.charAt(random.nextInt(candidateChars
+                .length())));
+    }
 
+    return sb.toString();
+  }
 
 }

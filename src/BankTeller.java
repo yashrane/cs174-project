@@ -1,7 +1,13 @@
+import java.sql.*;
+
 public class BankTeller{
   private DatabaseConnection database;
+  private ATM atm;
+  private String currentDate;
   public BankTeller(){
     this.database = new DatabaseConnection();
+    this.atm = new ATM();
+    this.currentDate = getDate();
   }
 
   /**
@@ -12,6 +18,14 @@ public class BankTeller{
    */
   public String write_check(String account, double amount){
     //verify that account is checking
+    ResultSet rs = database.execute_query("select type,balance from account where account.a_id = " + account);
+    if(rs.next() && rs.getString("type").matches(".*Checking")){
+      double balance = rs.getDouble(balance);
+      atm.withdraw(account, balance);
+      String checkid = generateRandomChars(20);
+      // database.execute_query("");
+      return "";
+    }
     //use withdraw as helper function
     //generate check number
     return null;
@@ -65,16 +79,17 @@ public class BankTeller{
     return null;
   }
 
-  /**
+  /** TODO
    * List all accounts associated with a customer, and whether they are open or closed
    * @param primary_owner the id of the primary owner
    * @param owner_ids the list of all customer ids that own this account
    * @param initial_balance the initial balance of the account
    * @param type the account type
+   * @param branch the bank branch
    * @param linked_id the linked account id, if applicable. null otherwise
    * @return the new account id
    */
-  public String createAccount(String primary_owner, String [] owner_ids, double initial_balance, String type, String linked_id){
+  public String createAccount(String primary_owner, String [] owner_ids, double initial_balance, String type, String branch. String linked_id){
     //create new entry in account
     //create new entry for the initial transaction
     //create new entries for owns
@@ -85,15 +100,21 @@ public class BankTeller{
    * Delete closed accounts and customers who own no accounts
    */
   public void deleteClosed(){
-    //delete closed accounts
-    //delete customers who own no accounts
+      //delete closed accounts
+      String delete_accounts = "delete from account where isClosed = 1";
+      // String delete_owns = "delete from owns where exists(select * from account where owns.a_id = account.a_id)";
+      database.execute_query(delete_accounts);
+
+      //delete customers who own no accounts
+      String delete_customers = "delete from customer where not exists (select * from owns where customer.taxID = customer.taxID)";
+      database.execute_query(delete_customers);
   }
 
   /**
    * Delete all transactions
    */
   public void deleteTransactions(){
-
+    database.execute_query("delete from transaction");
   }
 
   /**
@@ -110,6 +131,36 @@ public class BankTeller{
   public void setDate(String date){//TODO: figure out how the hell this is gonna work
     //update date
     //update interest if end of month
+  }
+
+  /**
+   * Updates the date and adds interest if the date is past the end of the month
+   */
+  public String getDate(){
+    try{
+      ResultSet rs = database.execute_query("select timestamp from CurrentDate");
+      if(rs.next()){
+        String date = rs.getString("timestamp");
+        System.out.println(date);
+        return date;
+      }
+    }
+    catch(SQLException e){
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  public static String generateRandomChars(int length) {
+    String candidateChars  = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    StringBuilder sb = new StringBuilder();
+    Random random = new Random();
+    for (int i = 0; i < length; i++) {
+        sb.append(candidateChars.charAt(random.nextInt(candidateChars
+                .length())));
+    }
+
+    return sb.toString();
   }
 
 }

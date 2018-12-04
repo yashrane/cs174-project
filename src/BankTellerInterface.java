@@ -181,16 +181,17 @@ class BankTellerInterface {
     }
 
     private JPanel getNewAccountPanel(){
-      return InterfaceHelper.makeFormPanel(new String []{"Primary Owner", "Owners (Seperated by Commas)", "Initial Balance", "Type", "Linked ID (If Applicable)"}, new FormAction(){
+      return InterfaceHelper.makeFormPanel(new String []{"Primary Owner", "Owners (Seperated by Commas)", "Initial Balance", "Type","Bank Branch" ,"Linked ID (If Applicable)"}, new FormAction(){
         public void onSubmit(String [] inputs){
           try{
             String primary_owner = inputs[0];
             String [] owners = inputs[1].split("\\s*,\\s*");
             double amount = Double.parseDouble(inputs[2]);
             String type = inputs[3];
-            String linked_id = inputs[4];
+            String branch = inputs[4];
+            String linked_id = inputs[5];
 
-            String account_id = teller.createAccount(primary_owner, owners, amount, type, linked_id);
+            String account_id = teller.createAccount(primary_owner, owners, amount, type,branch, linked_id);
 
             if(account_id != null){
               InterfaceHelper.displayList("Account ID", new String[]{"New Account ID",account_id});
