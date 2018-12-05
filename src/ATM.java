@@ -47,9 +47,8 @@ public class ATM{
       al.toArray(a);
       return a;
     }catch(SQLException e){
-      e.printStackTrace();
+      return new String[]{"There was an error while proccessing your request"};
     }
-    return null;
   }
 
   /**
@@ -63,7 +62,7 @@ public class ATM{
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance+"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        if(rs.next()) {}
      }catch(SQLException e){
-       e.printStackTrace();
+        return "There was an error while proccessing your request";
      }
     return null;
   }
@@ -85,7 +84,7 @@ public class ATM{
        if(rs.next()) {}
        //if(balance <= 0.01) then close;
      }catch(SQLException e){
-       e.printStackTrace();
+         return "There was an error while proccessing your request";
      }
     return null;
   }
@@ -107,7 +106,7 @@ public class ATM{
        if(rs_from.next() && rs_to.next()) {}
        //if(balance <= 0.01) then close;
      }catch(SQLException e){
-       e.printStackTrace();
+         return "There was an error while proccessing your request";
      }
     return null;
   }
@@ -129,7 +128,7 @@ public class ATM{
       if(rs_from.next()) {}
       //if(balance <= 0.01) then close;
     }catch(SQLException e){
-      e.printStackTrace();
+        return "There was an error while proccessing your request";
     }
     return null;
   }
@@ -151,7 +150,7 @@ public class ATM{
             String wire = transfer_helper(from_account, to_account, amount);
         }
       }catch(SQLException e){
-        e.printStackTrace();
+          return "There was an error while proccessing your request";
       }
     }
     return null;
@@ -174,7 +173,7 @@ public class ATM{
       //pleasedothis
       }
     }catch(SQLException e){
-      e.printStackTrace();
+        return "There was an error while proccessing your request";
     }
     return null;
   }
@@ -196,7 +195,7 @@ public class ATM{
         //pleasedothis
       }
     }catch(SQLException e){
-      e.printStackTrace();
+      return "There was an error while proccessing your request";
     }
     return null;
   }
@@ -213,7 +212,7 @@ public class ATM{
         }
         //pleasedothis
       }catch(SQLException e){
-        e.printStackTrace();
+        return "There was an error while proccessing your request";
       }
     return null;
   }
@@ -235,7 +234,7 @@ public class ATM{
        }
        //pleasedothis
      }catch(SQLException e){
-       e.printStackTrace();
+       return "There was an error while proccessing your request";
      }
      return null;
    }
