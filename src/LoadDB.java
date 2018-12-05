@@ -70,7 +70,7 @@ public class LoadDB{
       "PRIMARY KEY (a_id),"+
       "FOREIGN KEY(PrimaryOwner) REFERENCES Customer ON DELETE CASCADE,"+
       "FOREIGN KEY(linked_id) REFERENCES Account ON DELETE CASCADE,"+
-      "CONSTRAINT CHK_Balance CHECK (balance > 0.0),"+
+      "CONSTRAINT CHK_Balance CHECK (balance >= 0.0),"+
       "CONSTRAINT CHK_Link CHECK ( (type='Pocket' and linked_id is not null) or"+
         "(type!='Pocket' and linked_id is null) )"+
      ")";
