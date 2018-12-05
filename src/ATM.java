@@ -26,6 +26,7 @@ public class ATM{
         return true;
       }
     }catch(SQLException e){
+
     }
     return false;
   }
@@ -60,9 +61,7 @@ public class ATM{
   public String deposit(String account, double amount){
      try{
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance+"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-       if(rs.next()) {
-         log_transaction(amount, "Deposit", NULL, NULL, account);
-       }
+       if(rs.next()) {}
      }catch(SQLException e){
        e.printStackTrace();
      }
@@ -80,9 +79,7 @@ public class ATM{
   public String withdraw(String account, double amount){
      try{
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-       if(rs.next()) {
-         log_transaction(amount, "Withdraw", NULL, account, NULL);
-       }
+       if(rs.next()) {}
        //if(balance <= 0.01) then close;
      }catch(SQLException e){
        e.printStackTrace();
@@ -101,8 +98,8 @@ public class ATM{
      try{
        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(from_account));
        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(to_account));
-       if(rs_from.next() && rs_to.next()) {
-       }
+       if(rs_from.next() && rs_to.next()) {}
+       //if(balance <= 0.01) then close;
      }catch(SQLException e){
        e.printStackTrace();
      }
@@ -120,9 +117,8 @@ public class ATM{
     try{
         ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE PrimaryOwner = "+current_user+" AND a_id= "+LoadDB.parse(from_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
         ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.98*amount)+" WHERE a_id= "+LoadDB.parse(to_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-        if(rs_from.next() && rs_to.next()) {
-          log_transaction(amount, "Wire", NULL, from_account, to_account);
-        }
+        if(rs_from.next()) {}
+      //if(balance <= 0.01) then close;
     }catch(SQLException e){
       e.printStackTrace();
     }
@@ -144,7 +140,6 @@ public class ATM{
                                                                                                                   "O2.taxID = "+LoadDB.parse(current_user)+" AND O2.a_id= "+LoadDB.parse(to_account)+" AND O2.a_id = A2.a_id AND (A2.type= 'Student-Checking' OR A2.type= 'Interest-Checking' OR A2.type= 'Savings')"); //accounts must have at least one owner in common
         if(rs.next()) {
             String wire = transfer_helper(from_account, to_account, amount);
-            log_transaction(amount, "Transfer", NULL, from_account, to_account);
         }
       }catch(SQLException e){
         e.printStackTrace();
@@ -164,7 +159,7 @@ public class ATM{
         String l_id = rs.getString("linked_id");
         ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(account));
         ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(l_id));
-        log_transaction(amount, "Top-Up", NULL, l_id, account);
+      //$5 transaction fee- check log
       }
     }catch(SQLException e){
       e.printStackTrace();
@@ -183,7 +178,7 @@ public class ATM{
         String l_id = rs.getString("linked_id");
         ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.97*amount)+" WHERE a_id= "+LoadDB.parse(l_id));
         ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(account));
-        log_transaction(amount, "Collect", NULL, account, l_id);
+        //$5 transaction fee- check log
       }
     }catch(SQLException e){
       e.printStackTrace();
@@ -200,7 +195,6 @@ public class ATM{
         ResultSet rs = database.execute_query("SELECT * FROM Account A1, Account A2 WHERE A1.a_id = "+LoadDB.parse(from_account)+" AND A1.type= 'Pocket' AND "+"A2.a_id= "+LoadDB.parse(to_account)+" AND A2.type= 'Pocket'");
         while(rs.next()) {
           String pay = transfer_helper(from_account, to_account, amount);
-          log_transaction(amount, "Pay Friend", NULL, from_account, to_account);
         }
       }catch(SQLException e){
         e.printStackTrace();
@@ -219,8 +213,8 @@ public class ATM{
      try{
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
        if(rs.next()) {
-         log_transaction(amount, "Purchase", NULL, account, NULL);
        }
+       //if(balance <= 0.01) then close;
      }catch(SQLException e){
        e.printStackTrace();
      }
@@ -278,6 +272,31 @@ public class ATM{
 
   public void applyFeeIfFirstTransaction(String a_id){
     database.execute_query("update account A set A.balance = A.balance - 5 where A.a_id= "+LoadDB.parse(a_id)+ " and 1 > (select count(T.a_id) from transaction T where T.a_id = A.a_id and extract(month from T.timestamp) = (select MAX(extract(month from C.timestamp)) from currentdate C))");
+  }
+
+  public boolean balanceTooLow(String a_id, double amount){
+    ResultSet rs = database.execute_query("select balance from account where a_id="+LoadDB.parse(a_id));
+    double balance = parseResultSetDouble(rs, "balance")[0];
+    return amount >= balance;
+  }
+
+  public double[] parseResultSetDouble(ResultSet rs, String key){
+    try{
+      ArrayList<Double> al = new ArrayList<Double>();
+      while(rs.next()) {
+        Double id = rs.getDouble(key);
+        al.add(id);
+      }
+      rs.beforeFirst();
+      double[] a = new double[al.size()];
+      for (int i = 0; i < a.length; i++) {
+         a[i] = al.get(i);
+       }
+      return a;
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
+    return null;
   }
 
 }
