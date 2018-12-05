@@ -37,7 +37,7 @@ public class ATM{
    */
   public String[] get_accounts(){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Owns WHERE taxID = "+current_user); //return a result set
+      ResultSet rs = database.execute_query("SELECT * FROM Owns WHERE taxID = "+LoadDB.parse(current_user)); //return a result set
       ArrayList al = new ArrayList();
       while(rs.next()) {
         String id = rs.getString("a_id");
@@ -60,7 +60,7 @@ public class ATM{
    */
   public String deposit(String account, double amount){
      try{
-       ResultSet rs = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id = "+account+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+       ResultSet rs = database.execute_query("UPDATE Account SET balance= balance+"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        if(rs.next()) {}
      }catch(SQLException e){
        e.printStackTrace();
@@ -78,7 +78,7 @@ public class ATM{
    */
   public String withdraw(String account, double amount){
      try{
-       ResultSet rs = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id = "+account+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+       ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        if(rs.next()) {}
        //if(balance <= 0.01) then close;
      }catch(SQLException e){
@@ -96,8 +96,8 @@ public class ATM{
    */
   private String transfer_helper(String from_account, String to_account, double amount){
      try{
-       ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id = "+from_account);
-       ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id = "+to_account);
+       ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(from_account));
+       ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(to_account));
        if(rs_from.next() && rs_to.next()) {}
        //if(balance <= 0.01) then close;
      }catch(SQLException e){
@@ -115,9 +115,9 @@ public class ATM{
    */
   public String wire(String from_account, String to_account, double amount){
     try{
-        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE PrimaryOwner = "+current_user+" AND a_id = "+from_account+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.98*amount)+" WHERE a_id = "+to_account+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-        if(rs_from.next() && rs_to.next()) {}
+        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE PrimaryOwner = "+current_user+" AND a_id= "+LoadDB.parse(from_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.98*amount)+" WHERE a_id= "+LoadDB.parse(to_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+        if(rs_from.next()) {}
       //if(balance <= 0.01) then close;
     }catch(SQLException e){
       e.printStackTrace();
@@ -136,7 +136,8 @@ public class ATM{
   public String transfer(String from_account, String to_account, double amount){
     if(amount <= 2000){ //amount cannot exceed $2000
       try{
-        ResultSet rs = database.execute_query("SELECT * FROM Owns WHERE (taxID = "+current_user+" AND a_id= "+from_account+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings'+) AND (taxID = "+current_user+" AND a_id= "+to_account+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')"); //accounts must have at least one owner in common
+        ResultSet rs = database.execute_query("SELECT * FROM Owns O1, Owns O2, Account A1, Account A2 WHERE O1.taxID = "+LoadDB.parse(current_user)+" AND O1.a_id= "+LoadDB.parse(from_account)+" and O1.a_id = A1.a_id AND (A1.type= 'Student-Checking' OR A1.type= 'Interest-Checking' OR A1.type= 'Savings') AND "+
+                                                                                                                  "O2.taxID = "+LoadDB.parse(current_user)+" AND O2.a_id= "+LoadDB.parse(to_account)+" AND O2.a_id = A2.a_id AND (A2.type= 'Student-Checking' OR A2.type= 'Interest-Checking' OR A2.type= 'Savings')"); //accounts must have at least one owner in common
         if(rs.next()) {
             String wire = transfer_helper(from_account, to_account, amount);
         }
@@ -153,11 +154,30 @@ public class ATM{
    */
   public String top_up(String account, double amount){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+account+" AND type= 'Pocket'"); //accounts must have at least one owner in common
-      while(rs.next()) {
-        String p_id = rs.getString("linked_id");
-        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+account);
-        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id = "+p_id);
+      ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
+      while(rs.next()){
+        String l_id = rs.getString("linked_id");
+        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(account));
+        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(l_id));
+      //$5 transaction fee- check log
+      }
+    }catch(SQLException e){
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  /**
+   * Move money from the specifed pocket account back to it's linked account. There is a 3% fee
+   * If it is the first transaction of the month with this account, apply a $5 fee
+   */
+  public String collect(String account, double amount){
+    try{
+      ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
+      while(rs.next()){
+        String l_id = rs.getString("linked_id");
+        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.97*amount)+" WHERE a_id= "+LoadDB.parse(l_id));
+        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(account));
         //$5 transaction fee- check log
       }
     }catch(SQLException e){
@@ -167,28 +187,39 @@ public class ATM{
   }
 
   /**
-   * Move money from the specifed pocket account back to it's liked account. There is a 3% fee
-   * If it is the first transaction of the month with this account, apply a $5 fee
-   */
-  public String collect(String account, double amount){
-    return null;
-  }
-
-  /**
    * Move money from the specifed pocket account to another pocket account.
    * If it is the first transaction of the month with either account, apply a $5 fee to the relevant account
    */
   public String pay_friend(String from_account, String to_account, double amount){
+      try{
+        ResultSet rs = database.execute_query("SELECT * FROM Account A1, Account A2 WHERE A1.a_id = "+LoadDB.parse(from_account)+" AND A1.type= 'Pocket' AND "+"A2.a_id= "+LoadDB.parse(to_account)+" AND A2.type= 'Pocket'");
+        while(rs.next()) {
+          String pay = transfer_helper(from_account, to_account, amount);
+        }
+      }catch(SQLException e){
+        e.printStackTrace();
+      }
     return null;
   }
 
   /**
-   * Subtract money from the specified pocket account
+   * Subtract the specified dollar amount from the given pocket account
    * If it is the first transaction of the month with this account, apply a $5 fee
+   * @param account the account id to withdraw from
+   * @param amount the money to withdraw in dollars
+   * @return an error message if applicable. null otherwise
    */
-  public String purchase(String account, double amount){
-    return null;
-  }
+   public String purchase(String account, double amount){
+     try{
+       ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
+       if(rs.next()) {
+       }
+       //if(balance <= 0.01) then close;
+     }catch(SQLException e){
+       e.printStackTrace();
+     }
+     return null;
+   }
 
 
   // TODO: figure out how this works
@@ -207,10 +238,6 @@ public class ATM{
     database.execute_query(query);
   }
 
-  /**
-   * Subtract money from the specified pocket account
-   * If it is the first transaction of the month with this account, apply a $5 fee
-   */
 
   /**
    * Updates the date and adds interest if the date is past the end of the month

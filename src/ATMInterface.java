@@ -27,7 +27,7 @@ class ATMInterface {
 
       JPanel header = new JPanel(new CardLayout());
       header.add(new JLabel("Welcome to the National Bank of Debt!"), "Welcome");
-    
+
 
       cards = new JPanel(new CardLayout());
 
@@ -151,7 +151,7 @@ class ATMInterface {
           try{
             String id = inputs[0];
             double amount = Double.parseDouble(inputs[1]);
-            String error = atm.withdraw(id, amount);
+            String error = atm.purchase(id, amount);
             if(error == null){
               changeScreen("Menu");
             }
