@@ -20,7 +20,7 @@ public class ATM{
    */
   public boolean login(String name, String pin){
     try{
-      ResultSet rs = database.execute_query("SELECT * FROM Customer WHERE name = "+LoadDB.parse(name)+" AND pin= "+LoadDB.parse(pin)); //return a result set
+      ResultSet rs = database.execute_query("SELECT * FROM Customer WHERE name = "+LoadDB.parse(name)+" AND pin= "+LoadDB.parse(LoadDB.hashPin(pin))); //return a result set
       if(rs.next()) {
         current_user = rs.getString("taxID");
         return true;

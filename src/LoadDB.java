@@ -144,8 +144,8 @@ public class LoadDB{
         String name = parse(columns[0]);
         String taxID = parse(columns[1]);
         String address = parse(columns[2]);
-        // String pin = parse(hashPin(columns[3]));
-        String pin = parse(columns[3]);
+        String pin = parse(hashPin(columns[3]));
+        // String pin = parse(columns[3]);
 
         String query = "insert into Customer (name, taxID, address, pin) values ("+
           name+", " + taxID + ", " + address + ", " + pin + ")";
