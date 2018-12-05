@@ -272,4 +272,8 @@ public class ATM{
     return sb.toString();
   }
 
+  public void closeAccountIfLowBalance(String a_id){
+    database.execute_query("update account set isClosed = 1 where balance < 0.01 and a_id="+LoadDB.parse(a_id));
+  }
+
 }
