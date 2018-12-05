@@ -50,7 +50,7 @@ public class InterfaceHelper{
   public static void displayList(String listname,String [] items){
     JFrame frame = new JFrame(listname);
     frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-    frame.setSize(200, 400);
+    frame.setSize(300, 400);
     JPanel panel = new JPanel();
     panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
@@ -67,7 +67,8 @@ public class InterfaceHelper{
     panel.add(Box.createVerticalGlue());
     for(String item: items){
 
-      JLabel text = new JLabel(item);
+      JTextArea text = new JTextArea(item);
+      text.setEditable(false);
       text.setAlignmentX(Component.CENTER_ALIGNMENT);
       text.setAlignmentY(Component.CENTER_ALIGNMENT);
       panel.add(text);
