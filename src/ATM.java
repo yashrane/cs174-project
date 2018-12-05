@@ -284,6 +284,19 @@ public class ATM{
     return sb.toString();
   }
 
+  public boolean isFirstTransactionOfMonth(String a_id){
+    try{
+      ResultSet rs = database.execute_query("select T.a_id from transaction T where T.a_id = "+LoadDB.parse(a_id)+" and extract(month from T.timestamp) = (select MAX(extract(month from C.timestamp)) from currentdate C)");
+      if(rs.next()){
+        return false;
+      }
+    }
+    catch(SQLException e){
+
+    }
+    return true;
+  }
+
   public void closeAccountIfLowBalance(String a_id){
     database.execute_query("UPDATE Account SET isClosed = 1 WHERE balance <= 0.01 and a_id="+LoadDB.parse(a_id));
   }
@@ -312,5 +325,7 @@ public class ATM{
     }
     return null;
   }
+
+
 
 }
