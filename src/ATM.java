@@ -179,26 +179,19 @@ public class ATM{
   }
 
 
-  // TODO: figure out how this works
   public void log_transaction(double amount, String type, String check_no, String paying_id, String receiving_id){
 
     String t_id = "'" + generateRandomChars(10) + "'";
     type = "'" +  type + "'";
-    String date = "TO_DATE('" + currentDate + "', 'YYYY-MM-DD')";
+    String date = "TO_DATE('" + currentDate + "', 'YYYY-MM-DD HH24:MI:SS')";
     check_no = LoadDB.parseNULL(check_no);
     paying_id = LoadDB.parseNULL(paying_id);
     receiving_id = LoadDB.parseNULL(receiving_id);
 
     String query = "insert into transaction(t_id, amount, type, timestamp, check_no, paying_id, receiving_id) values("+
-      t_id+", " + amount+", " + type+", " + currentDate+", " + check_no+", " + paying_id+", " + receiving_id + ")";
-
+      t_id+", " + amount+", " + type+", " + date+", " + check_no+", " + paying_id+", " + receiving_id + ")";
     database.execute_query(query);
   }
-
-  /**
-   * Subtract money from the specified pocket account
-   * If it is the first transaction of the month with this account, apply a $5 fee
-   */
 
   /**
    * Updates the date and adds interest if the date is past the end of the month

@@ -27,7 +27,7 @@ class ATMInterface {
 
       JPanel header = new JPanel(new CardLayout());
       header.add(new JLabel("Welcome to the National Bank of Debt!"), "Welcome");
-    
+
 
       cards = new JPanel(new CardLayout());
 
