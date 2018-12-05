@@ -270,4 +270,8 @@ public class ATM{
     database.execute_query("update account set isClosed = 1 where balance < 0.01 and a_id="+LoadDB.parse(a_id));
   }
 
+  public void applyFeeIfFirstTransaction(String a_id){
+    database.execute_query("update account A set A.balance = A.balance - 5 where A.a_id= "+LoadDB.parse(a_id)+ " and 1 > (select count(T.a_id) from transaction T where T.a_id = A.a_id and extract(month from T.timestamp) = (select MAX(extract(month from C.timestamp)) from currentdate C))");
+  }
+
 }
