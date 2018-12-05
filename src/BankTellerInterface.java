@@ -144,7 +144,7 @@ class BankTellerInterface {
     private JPanel getDTERPanel(){
       return InterfaceHelper.makeButtonPanel("Generate DTER", new FormAction(){
         public void onSubmit(String [] inputs){
-          String [] accounts = teller.listClosedAccounts();
+          String [] accounts = teller.generateDTER();
           if(accounts != null){
             InterfaceHelper.displayList("Generate DTER", accounts);
           }
@@ -181,24 +181,25 @@ class BankTellerInterface {
     }
 
     private JPanel getNewAccountPanel(){
-      return InterfaceHelper.makeFormPanel(new String []{"Primary Owner", "Owners (Seperated by Commas)", "Initial Balance", "Type","Bank Branch" ,"Linked ID (If Applicable)"}, new FormAction(){
+      return InterfaceHelper.makeFormPanel(new String []{"Account ID","Primary Owner", "Owners (Seperated by Commas)", "Initial Balance", "Type","Bank Branch" ,"Linked ID (If Applicable)"}, new FormAction(){
         public void onSubmit(String [] inputs){
           try{
-            String primary_owner = inputs[0];
-            String [] owners = inputs[1].split("\\s*,\\s*");
-            double amount = Double.parseDouble(inputs[2]);
-            String type = inputs[3];
-            String branch = inputs[4];
-            String linked_id = inputs[5];
+            String accountID = inputs[0];
+            String primary_owner = inputs[1];
+            String [] owners = inputs[2].split("\\s*,\\s*");
+            double amount = Double.parseDouble(inputs[3]);
+            String type = inputs[4];
+            String branch = inputs[5];
+            String linked_id = inputs[6];
 
-            String account_id = teller.createAccount(primary_owner, owners, amount, type,branch, linked_id);
+            String error = teller.createAccount(accountID,primary_owner, owners, amount, type,branch, linked_id);
 
-            if(account_id != null){
-              InterfaceHelper.displayList("Account ID", new String[]{"New Account ID",account_id});
+            if(error == null){
+              InterfaceHelper.displayList("Account ID", new String[]{"New account created!"});
               changeScreen("Menu");
             }
             else{
-              InterfaceHelper.showError("A new account could not be created");
+              InterfaceHelper.showError(error);
             }
           }
           catch(java.lang.NumberFormatException e){
@@ -222,8 +223,7 @@ class BankTellerInterface {
             if(error == null){
               InterfaceHelper.displayList("Account ID", new String[]{"New Customer Created"});
               changeScreen("Menu");
-            }
-            else{
+            }else{
               InterfaceHelper.showError(error);
             }
           }
@@ -259,15 +259,10 @@ class BankTellerInterface {
             String type = inputs[0];
             double rate = Double.parseDouble(inputs[1]);
 
-            String error = teller.updateInterest(type, rate);
+            teller.updateInterest(type, rate);
 
-            if(error == null){
-              InterfaceHelper.displayList("Interest Rates", new String[]{"Interest Rates Updated!"});
-              changeScreen("Menu");
-            }
-            else{
-              InterfaceHelper.showError(error);
-            }
+            InterfaceHelper.displayList("Interest Rates", new String[]{"Interest Rates Updated!"});
+            changeScreen("Menu");
           }
           catch(java.lang.NumberFormatException e){
             InterfaceHelper.showError("Invalid input");

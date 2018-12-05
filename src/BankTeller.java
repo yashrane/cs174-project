@@ -5,6 +5,7 @@ public class BankTeller{
   private DatabaseConnection database;
   private ATM atm;
   private String currentDate;
+  private int [] DAYS_IN_MONTH = {31,28,31,30,31,30,31,31,30,31,30,31};
   public BankTeller(){
     this.database = new DatabaseConnection();
     this.atm = new ATM();
@@ -135,7 +136,12 @@ public class BankTeller{
         " extract(month from timestamp) = (select MAX(extract(month from timestamp)) from currentdate))";
     ResultSet rs = database.execute_query(query);
 
-    return parseResultSetString(rs, "a_id");
+    String [] result = parseResultSetString(rs, "a_id");
+
+    if(result.length <1){
+      return new String[]{"No accounts match criteria"};
+    }
+    return result;
   }
 
   /**
@@ -143,29 +149,126 @@ public class BankTeller{
    * @return an array of account ids
    */
   public String [] generateDTER(){
-    return null;
+
+    ResultSet ids = database.execute_query("select C.taxID from customer C"+
+      " where 10000 < (select sum(T.amount) from transaction T "+
+        "where T.receiving_id = C.taxID and "+
+        "extract(month from timestamp) = (select MAX(extract(month from timestamp)) from currentdate))");
+
+    String [] result = parseResultSetString(ids, "taxID");
+
+    if(result.length <1){
+      return new String[]{"No accounts match criteria"};
+    }
+    return result;
   }
 
   /**
    * List all accounts associated with a customer, and whether they are open or closed
    * @return an array of account ids
    */
-  public String [] generateCustomerReport(String taxId){
-    return null;
+  public String [] generateCustomerReport(String taxID){
+    ResultSet rs = database.execute_query("select A.a_id, A.isClosed from account A, owns O where O.a_id=A.a_id and O.taxID="+LoadDB.parse(taxID));
+    String [] ids = parseResultSetString(rs, "a_id");
+    String [] closed = parseResultSetString(rs, "isClosed");
+    String report = "";
+    for (int i=0;i<ids.length;i++){
+      boolean isclosed = (closed[i].equals("1")) ? true : false;
+      report+=ids[i]+"\tClosed:" + isclosed+"\n";
+    }
+    report+="\n";
+
+    return new String[]{report};
   }
+
+
+
 
   /**
    * Add monthly interest to all open accounts
    */
   public void addInterest(){
+    if(isInterestPaid()){
+      return;
+    }
+    ResultSet rs = database.execute_query("select a_id, balance,type from account where isClosed=0");
+    String [] accounts = parseResultSetString(rs, "a_id");
+    double [] balances = parseResultSetDouble(rs, "balance");
+    String [] types = parseResultSetString(rs, "type");
 
+    ResultSet interest_rs = database.execute_query("select type, interest_rate from interest");
+    String [] t = parseResultSetString(interest_rs, "type");
+    double [] r = parseResultSetDouble(interest_rs, "interest_rate");
+    Map<String, Double> rates = new HashMap<String, Double>();
+    for(int i=0;i<t.length;i++){
+      rates.put(t[i], r[i]);
+    }
+
+    for(int i=0;i<accounts.length;i++){
+      double interest = calculateInterest(accounts[i], balances[i], rates.get(types[i]));
+      database.execute_query("update account set balance=balance+"+interest+" where a_id="+LoadDB.parse(accounts[i]));
+      atm.log_transaction(balances[i], "accrue-interest", null, null, accounts[i]);
+    }
+    database.execute_query("update InterestPaid set paid=1");
   }
+  private double calculateInterest(String accountid, double final_balance, double monthly_rate){
+    ResultSet pos_transactions = database.execute_query("select extract(day from timestamp) as day, amount from transaction where receiving_id="+LoadDB.parse(accountid)+" and extract(month from timestamp) = (select MAX(extract(month from timestamp)) from currentdate)");
+    ResultSet neg_transactions = database.execute_query("select extract(day from timestamp) as day, amount from transaction where paying_id="+LoadDB.parse(accountid)+" and extract(month from timestamp) = (select MAX(extract(month from timestamp)) from currentdate)");
+    double inital = calculateInitialBalance(pos_transactions, neg_transactions,final_balance);
+    int currentMonth = Integer.parseInt(currentDate.substring(5,7));
+
+    double total = 0.0;
+    total+=interest_helper(pos_transactions, 1, currentMonth);
+    total+=interest_helper(neg_transactions, -1, currentMonth);
+    total+=inital*DAYS_IN_MONTH[currentMonth-1];
+    return total*monthly_rate/100;
+  }
+  private double interest_helper(ResultSet transactions, int sign, int currentMonth){
+    double total=0.0;
+    double [] amounts = parseResultSetDouble(transactions, "amount");
+    double [] days = parseResultSetDouble(transactions, "day");
+    for(int i=0;i<amounts.length;i++){
+      total+=sign*amounts[i]*(DAYS_IN_MONTH[currentMonth-1] - days[i]);
+    }
+    return total;
+  }
+  private boolean isInterestPaid(){
+    try{
+      String query = "select paid from interestpaid";
+      ResultSet rs = database.execute_query(query);
+      int paid = rs.getInt("paid");
+      if(paid == 1){
+        return true;
+      }
+    }
+    catch(SQLException e){
+
+    }
+    return false;
+  }
+
+
+
 
   /**
    * Create a new customer
-   * @return an error message if applicable. null otherwise
    */
   public String createCustomer(String taxID, String name, String address, String pin){
+
+    try{
+      ResultSet rs = database.execute_query("select taxID from customer where taxID="+LoadDB.parse(taxID) + " or pin="+LoadDB.parse(pin));
+      if(rs.next()){
+        return "Tax ID and pin must be unique";
+      }
+    }
+    catch(SQLException e){
+      return "There was an error while creating a customer.";
+    }
+
+
+    String query = "insert into Customer (name, taxID, address, pin) values ("+
+      LoadDB.parse(name)+", " + LoadDB.parse(taxID) + ", " + LoadDB.parse(address) + ", " + LoadDB.parse(pin) + ")";
+    database.execute_query(query);
     return null;
   }
 
@@ -179,10 +282,50 @@ public class BankTeller{
    * @param linked_id the linked account id, if applicable. null otherwise
    * @return the new account id
    */
-  public String createAccount(String primary_owner, String [] owner_ids, double initial_balance, String type, String branch, String linked_id){
+  public String createAccount(String account_id,String primary_owner, String [] owner_ids, double initial_balance, String type, String branch, String linked_id){
+    try{
+      if(initial_balance < 0){
+        return "Initial balance must be positive.";
+      }
+      String [] TYPES = {"Interest-Checking", "Student-Checking", "Pocket", "Savings"};
+      if(!Arrays.asList(TYPES).contains(type)){
+        return "Invalid account type.";
+      }
+
+      if(linked_id != null && !linked_id.isEmpty()){
+        if(!type.equals("Pocket")){
+          return "Non-pocket account cannot be linked";
+        }
+        ResultSet rs = database.execute_query("select a_id from account where type<>'Pocket' and isClosed=0 and a_id="+LoadDB.parse(linked_id));
+        if(!rs.next()){
+          return "Cannot link to that account.";
+        }
+      }
+      ResultSet rs = database.execute_query("select a_id from account where a_id="+LoadDB.parse(account_id));
+      if(rs.next()){
+        return "Account ID already exists.";
+      }
+    }
+    catch(SQLException e){
+      return "There was an error while making your account.";
+    }
+
+
+
     //create new entry in account
+    String accountquery = "insert into Account (a_id, type, bank_branch, PrimaryOwner,  isClosed, linked_id, balance ) values ("+
+        LoadDB.parse(account_id)+", " + LoadDB.parse(type) + ", " + LoadDB.parse(branch) + ", " + LoadDB.parse(primary_owner) + ", 0, " + LoadDB.parseNULL(linked_id) +", "+initial_balance+")";
+    database.execute_query(accountquery);
     //create new entry for the initial transaction
+    atm.log_transaction(initial_balance, "deposit",null, null, account_id );
     //create new entries for owns
+    for(String id : owner_ids){
+      String ownsquery = "insert into Owns (taxID, a_id) values ("+
+        LoadDB.parse(id)+", " + LoadDB.parse(account_id) + ")";
+      database.execute_query(ownsquery);
+    }
+
+
     return null;
   }
 
@@ -212,20 +355,31 @@ public class BankTeller{
    * @return an error message if applicable. null otherwise
    */
   public String updateInterest(String type, double rate){
-    return null;
+    database.execute_query("update interest set interest_rate="+rate+"where type="+LoadDB.parse(type));
+    return "Interest rate updated.";
   }
 
   /**
    * Updates the date and adds interest if the date is past the end of the month
    */
-  public void setDate(String date){//TODO: figure out how the hell this is gonna work
+  public void setDate(String date){
     //update date
+    database.execute_query("update currentdate set timestamp = TO_DATE(" + LoadDB.parse(date) + ", 'YYYY-MM-DD')");
+    int month = Integer.parseInt(date.substring(5,7));
+    int day = Integer.parseInt(date.substring(8,10));
+
     //update interest if end of month
+    if(day == DAYS_IN_MONTH[month-1] ){
+      addInterest();
+    }
+
+    if(Integer.parseInt(currentDate.substring(5,7)) != month){
+      database.execute_query("update interestpaid set paid=0");
+    }
+
+    currentDate = getDate();
   }
 
-  /**
-   * Updates the date and adds interest if the date is past the end of the month
-   */
   public String getDate(){
     try{
       ResultSet rs = database.execute_query("select timestamp from CurrentDate");

@@ -19,6 +19,7 @@ public class LoadDB{
     populate_transactions("res/transactions.csv", database);
     populate_interest("res/interest.csv", database);
     populate_date("2018-12-3", database);
+    populate_interest_paid(database);
   }
 
   public static void drop_tables(DatabaseConnection database){
@@ -27,6 +28,8 @@ public class LoadDB{
     database.execute_query("drop table account");
     database.execute_query("drop table customer");
     database.execute_query("drop table interest");
+    database.execute_query("drop table currentdate");
+    database.execute_query("drop table interestpaid");
   }
 
   public static void reset_database(DatabaseConnection database){
@@ -85,7 +88,7 @@ public class LoadDB{
     String createTransactions = "CREATE TABLE Transaction("+
       "amount	REAL,"+
       "timestamp		DATE,"+
-      "type		CHAR(10),"+
+      "type		CHAR(16),"+
       "t_id		CHAR(10),"+
       "check_no	CHAR(20),"+
       "receiving_id	CHAR(10),"+
@@ -107,6 +110,9 @@ public class LoadDB{
         "timestamp DATE"+
     ")";
     database.execute_query(createDate);
+
+    String createInterestPaid = "CREATE TABLE InterestPaid(paid INTEGER)";
+    database.execute_query(createInterestPaid);
   }
 
   public static void delete_from_tables(DatabaseConnection database, String tablename){
@@ -138,6 +144,7 @@ public class LoadDB{
         String name = parse(columns[0]);
         String taxID = parse(columns[1]);
         String address = parse(columns[2]);
+        // String pin = parse(hashPin(columns[3]));
         String pin = parse(columns[3]);
 
         String query = "insert into Customer (name, taxID, address, pin) values ("+
@@ -150,6 +157,14 @@ public class LoadDB{
     catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public static String hashPin(String pin){
+    String hash = "";
+    for(int i=0;i<pin.length();i++){
+      hash+=(char)((int)(pin.charAt(i))+65);
+    }
+    return hash;
   }
 
   public static void populate_accounts(String filename, DatabaseConnection database){
@@ -211,12 +226,19 @@ public class LoadDB{
         String date = "TO_DATE(" + parse(columns[3]) + ", 'YYYY-MM-DD')";
         String check_no = parseNULL(columns[4]);
         String paying_id = parseNULL(columns[5]);
-        String receiving_id = parseNULL(columns[6]);
+        String receiving_id;
+        if(columns.length < 7){
+          receiving_id = "NULL";
+        }
+        else{
+          receiving_id = parseNULL(columns[6]);
+        }
+
 
 
         String query = "insert into transaction(t_id, amount, type, timestamp, check_no, paying_id, receiving_id) values("+
           t_id+", " + amount+", " + type+", " + date+", " + check_no+", " + paying_id+", " + receiving_id + ")";
-
+        // System.out.println(query);
         database.execute_query(query);
 
       }
@@ -249,6 +271,11 @@ public class LoadDB{
 
   public static void populate_date(String date, DatabaseConnection database){
     String query = "insert into currentdate(timestamp) values(TO_DATE(" + parse(date) + ", 'YYYY-MM-DD')" + ")";
+    database.execute_query(query);
+  }
+
+  public static void populate_interest_paid(DatabaseConnection database){
+    String query = "insert into InterestPaid(paid) values(0)";
     database.execute_query(query);
   }
 
