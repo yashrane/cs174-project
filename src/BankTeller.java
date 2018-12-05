@@ -221,7 +221,7 @@ public class BankTeller{
     total+=interest_helper(pos_transactions, 1, currentMonth);
     total+=interest_helper(neg_transactions, -1, currentMonth);
     total+=inital*DAYS_IN_MONTH[currentMonth-1];
-    return total*monthly_rate/100;
+    return total*monthly_rate/100/12;
   }
   private double interest_helper(ResultSet transactions, int sign, int currentMonth){
     double total=0.0;
