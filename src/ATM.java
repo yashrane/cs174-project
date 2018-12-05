@@ -77,8 +77,11 @@ public class ATM{
    */
   public String withdraw(String account, double amount){
      try{
-
+       if(balanceTooLow(account, amount)){
+         return "Balance too low.";
+       }
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+       closeAccountIfLowBalance(account);
        if(rs.next()) {}
        //if(balance <= 0.01) then close;
      }catch(SQLException e){
@@ -99,7 +102,6 @@ public class ATM{
        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(from_account));
        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(to_account));
        if(rs_from.next() && rs_to.next()) {}
-       //if(balance <= 0.01) then close;
      }catch(SQLException e){
          return "There was an error while proccessing your request";
      }
@@ -115,10 +117,14 @@ public class ATM{
    */
   public String wire(String from_account, String to_account, double amount){
     try{
-        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE PrimaryOwner = "+current_user+" AND a_id= "+LoadDB.parse(from_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.98*amount)+" WHERE a_id= "+LoadDB.parse(to_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-        if(rs_from.next()) {}
-      //if(balance <= 0.01) then close;
+      if(balanceTooLow(from_account, amount)){
+        return "Balance too low.";
+      }
+      ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE PrimaryOwner = "+current_user+" AND a_id= "+LoadDB.parse(from_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+      ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.98*amount)+" WHERE a_id= "+LoadDB.parse(to_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+      closeAccountIfLowBalance(from_account);
+      if(rs_from.next()) {
+      }
     }catch(SQLException e){
         return "There was an error while proccessing your request";
     }
@@ -136,10 +142,14 @@ public class ATM{
   public String transfer(String from_account, String to_account, double amount){
     if(amount <= 2000){ //amount cannot exceed $2000
       try{
+        if(balanceTooLow(from_account, amount)){
+          return "Balance too low.";
+        }
         ResultSet rs = database.execute_query("SELECT * FROM Owns O1, Owns O2, Account A1, Account A2 WHERE O1.taxID = "+LoadDB.parse(current_user)+" AND O1.a_id= "+LoadDB.parse(from_account)+" and O1.a_id = A1.a_id AND (A1.type= 'Student-Checking' OR A1.type= 'Interest-Checking' OR A1.type= 'Savings') AND "+
                                                                                                                   "O2.taxID = "+LoadDB.parse(current_user)+" AND O2.a_id= "+LoadDB.parse(to_account)+" AND O2.a_id = A2.a_id AND (A2.type= 'Student-Checking' OR A2.type= 'Interest-Checking' OR A2.type= 'Savings')"); //accounts must have at least one owner in common
         if(rs.next()) {
             String wire = transfer_helper(from_account, to_account, amount);
+            closeAccountIfLowBalance(from_account);
         }
       }catch(SQLException e){
           return "There was an error while proccessing your request";
@@ -157,9 +167,15 @@ public class ATM{
       ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
       while(rs.next()){
         String l_id = rs.getString("linked_id");
+        if(balanceTooLow(l_id, amount)){
+          return "Balance too low.";
+        }
         ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(account));
         ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(l_id));
-      //$5 transaction fee- check log
+        if(isFirstTransactionOfMonth(account)){
+          ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(account));
+        }
+        closeAccountIfLowBalance(l_id);
       }
     }catch(SQLException e){
         return "There was an error while proccessing your request";
@@ -176,9 +192,15 @@ public class ATM{
       ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
       while(rs.next()){
         String l_id = rs.getString("linked_id");
+        if(balanceTooLow(account, amount)){
+          return "Balance too low.";
+        }
         ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.97*amount)+" WHERE a_id= "+LoadDB.parse(l_id));
         ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(account));
-        //$5 transaction fee- check log
+        if(isFirstTransactionOfMonth(account)){
+          ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(account));
+        }
+        closeAccountIfLowBalance(account);
       }
     }catch(SQLException e){
       return "There was an error while proccessing your request";
@@ -194,8 +216,19 @@ public class ATM{
       try{
         ResultSet rs = database.execute_query("SELECT * FROM Account A1, Account A2 WHERE A1.a_id = "+LoadDB.parse(from_account)+" AND A1.type= 'Pocket' AND "+"A2.a_id= "+LoadDB.parse(to_account)+" AND A2.type= 'Pocket'");
         while(rs.next()) {
+          if(balanceTooLow(from_account, amount)){
+            return "Balance too low.";
+          }
           String pay = transfer_helper(from_account, to_account, amount);
         }
+        if(isFirstTransactionOfMonth(from_account)){
+          ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(from_account));
+        }
+        closeAccountIfLowBalance(from_account);
+        if(isFirstTransactionOfMonth(to_account)){
+          ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(to_account));
+        }
+        closeAccountIfLowBalance(to_account);
       }catch(SQLException e){
         return "There was an error while proccessing your request";
       }
@@ -211,10 +244,16 @@ public class ATM{
    */
    public String purchase(String account, double amount){
      try{
+       if(balanceTooLow(account, amount)){
+         return "Balance too low.";
+       }
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
        if(rs.next()) {
        }
-       //if(balance <= 0.01) then close;
+       if(isFirstTransactionOfMonth(account)){
+         ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(account));
+       }
+       closeAccountIfLowBalance(account);
      }catch(SQLException e){
        return "There was an error while proccessing your request";
      }
@@ -274,7 +313,6 @@ public class ATM{
       }
     }
     catch(SQLException e){
-
     }
     return true;
   }
@@ -285,9 +323,9 @@ public class ATM{
   }
 
   public boolean balanceTooLow(String a_id, double amount){
-    ResultSet rs = database.execute_query("select balance from account where a_id="+LoadDB.parse(a_id));
+    ResultSet rs = database.execute_query("SELECT balance FROM account WHERE a_id="+LoadDB.parse(a_id));
     double balance = parseResultSetDouble(rs, "balance")[0];
-    return amount >= balance;
+    return amount > balance;
   }
 
   public double[] parseResultSetDouble(ResultSet rs, String key){
