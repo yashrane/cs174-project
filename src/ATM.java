@@ -79,6 +79,7 @@ public class ATM{
    */
   public String withdraw(String account, double amount){
      try{
+
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        if(rs.next()) {
          log_transaction(amount, "Withdraw", NULL, account, NULL);
@@ -247,7 +248,7 @@ public class ATM{
    */
   public String getDate(){
     try{
-      ResultSet rs = database.execute_query("select timestamp from CurrentDate");
+      ResultSet rs = database.execute_query("SELECT timestamp from CurrentDate");
       if(rs.next()){
         String date = rs.getString("timestamp");
         System.out.println(date);
@@ -273,11 +274,7 @@ public class ATM{
   }
 
   public void closeAccountIfLowBalance(String a_id){
-    database.execute_query("update account set isClosed = 1 where balance < 0.01 and a_id="+LoadDB.parse(a_id));
-  }
-
-  public void applyFeeIfFirstTransaction(String a_id){
-    database.execute_query("update account A set A.balance = A.balance - 5 where A.a_id= "+LoadDB.parse(a_id)+ " and 1 > (select count(T.a_id) from transaction T where T.a_id = A.a_id and extract(month from T.timestamp) = (select MAX(extract(month from C.timestamp)) from currentdate C))");
+    database.execute_query("UPDATE Account SET isClosed = 1 WHERE balance <= 0.01 and a_id="+LoadDB.parse(a_id));
   }
 
 }
