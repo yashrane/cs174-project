@@ -18,32 +18,26 @@ public class BankTeller{
    * @param amount the money to withdraw in dollars
    * @return the check number for the check written, or null if there was an error
    */
-  public String write_check(String account, double amount){//TODO fix
-    //verify that account is checking
-    try{
-      ResultSet rs = database.execute_query("select type,balance from account where account.a_id = " + LoadDB.parse(account));
-      if(rs.next() && rs.getString("type").matches(".*Checking")){
-        double balance = rs.getDouble("balance");
-        String error = atm.withdraw(account, balance);
-        if(error == null){
-          String checkid = generateRandomChars(20);
-          atm.log_transaction(amount, "write-check", checkid, account, "");
-          return null;
-        }
-        else{
-          return error;
-        }
-      }
-    }
-    catch(SQLException e){
-      e.printStackTrace();
-    }
+  public String write_check(String account, double amount){
 
-    return "";
+    if(atm.isClosed(account)){return "No transactions are allowed on a closed account.";}
+     try{
+       if(atm.balanceTooLow(account, amount)){
+         return "Balance too low.";
+       }
+       ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
+       atm.closeAccountIfLowBalance(account);
+       if(rs.next()) {}
+       String checkid = generateRandomChars(20);
+       atm.log_transaction(amount, "write-check", checkid, account, "");
+       //if(balance <= 0.01) then close;
+     }catch(SQLException e){
+         return "There was an error while proccessing your request";
+     }
+    return null;
   }
 
 
-//TODO
   /**
    * Generate a monthly statement for all accounts owned by the given customer ID
    * @param taxID a customer id
@@ -228,7 +222,7 @@ public class BankTeller{
     total+=interest_helper(pos_transactions, 1, currentMonth);
     total+=interest_helper(neg_transactions, -1, currentMonth);
     total+=inital*DAYS_IN_MONTH[currentMonth-1];
-    return total*monthly_rate/100;
+    return total*(monthly_rate/100.0)/DAYS_IN_MONTH[currentMonth-1];
   }
   private double interest_helper(ResultSet transactions, int sign, int currentMonth){
     double total=0.0;
@@ -281,7 +275,7 @@ public class BankTeller{
     return null;
   }
 
-  /** TODO
+  /**
    * List all accounts associated with a customer, and whether they are open or closed
    * @param primary_owner the id of the primary owner
    * @param owner_ids the list of all customer ids that own this account
@@ -377,16 +371,16 @@ public class BankTeller{
     int month = Integer.parseInt(date.substring(5,7));
     int day = Integer.parseInt(date.substring(8,10));
 
-    //update interest if end of month
-    if(day == DAYS_IN_MONTH[month-1] ){
-      addInterest();
-    }
-
     if(Integer.parseInt(currentDate.substring(5,7)) != month){
       database.execute_query("update interestpaid set paid=0");
     }
 
     currentDate = getDate();
+
+    //update interest if end of month
+    if(day == DAYS_IN_MONTH[month-1] ){
+      addInterest();
+    }
   }
 
   public String getDate(){

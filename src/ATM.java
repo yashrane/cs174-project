@@ -361,7 +361,7 @@ public class ATM{
 
   public boolean isClosed(String a_id){
     ResultSet rs = database.execute_query("SELECT isClosed FROM account WHERE a_id="+LoadDB.parse(a_id));
-    double closed = parseResultSetDouble(rs, "balance")[0];
+    double closed = parseResultSetDouble(rs, "isClosed")[0];
     return closed > 0;
   }
 
