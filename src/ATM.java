@@ -60,7 +60,9 @@ public class ATM{
   public String deposit(String account, double amount){
      try{
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance+"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
-       if(rs.next()) {}
+       if(rs.next()) {
+         log_transaction(amount, "deposit", null, account, null);
+       }
      }catch(SQLException e){
         return "There was an error while proccessing your request";
      }
@@ -82,8 +84,9 @@ public class ATM{
        }
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        closeAccountIfLowBalance(account);
-       if(rs.next()) {}
-       //if(balance <= 0.01) then close;
+       if(rs.next()) {
+         log_transaction(amount, "withdraw", null, null, account);
+       }
      }catch(SQLException e){
          return "There was an error while proccessing your request";
      }
@@ -101,7 +104,8 @@ public class ATM{
      try{
        ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(from_account));
        ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(to_account));
-       if(rs_from.next() && rs_to.next()) {}
+       if(rs_from.next() && rs_to.next()) {
+       }
      }catch(SQLException e){
          return "There was an error while proccessing your request";
      }
@@ -124,6 +128,7 @@ public class ATM{
       ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.98*amount)+" WHERE a_id= "+LoadDB.parse(to_account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
       closeAccountIfLowBalance(from_account);
       if(rs_from.next()) {
+        log_transaction(amount, "wire", null, from_account, to_account);
       }
     }catch(SQLException e){
         return "There was an error while proccessing your request";
@@ -145,11 +150,11 @@ public class ATM{
         if(balanceTooLow(from_account, amount)){
           return "Balance too low.";
         }
-        ResultSet rs = database.execute_query("SELECT * FROM Owns O1, Owns O2, Account A1, Account A2 WHERE O1.taxID = "+LoadDB.parse(current_user)+" AND O1.a_id= "+LoadDB.parse(from_account)+" and O1.a_id = A1.a_id AND (A1.type= 'Student-Checking' OR A1.type= 'Interest-Checking' OR A1.type= 'Savings') AND "+
-                                                                                                                  "O2.taxID = "+LoadDB.parse(current_user)+" AND O2.a_id= "+LoadDB.parse(to_account)+" AND O2.a_id = A2.a_id AND (A2.type= 'Student-Checking' OR A2.type= 'Interest-Checking' OR A2.type= 'Savings')"); //accounts must have at least one owner in common
+        ResultSet rs = database.execute_query("SELECT * FROM Owns O1, Owns O2, Account A1, Account A2 WHERE O1.taxID = O2.taxID AND O1.a_id= "+LoadDB.parse(from_account)+" and O1.a_id = A1.a_id AND (A1.type= 'Student-Checking' OR A1.type= 'Interest-Checking' OR A1.type= 'Savings') AND O2.a_id= "+LoadDB.parse(to_account)+" AND O2.a_id = A2.a_id AND (A2.type= 'Student-Checking' OR A2.type= 'Interest-Checking' OR A2.type= 'Savings')"); //accounts must have at least one owner in common
         if(rs.next()) {
             String wire = transfer_helper(from_account, to_account, amount);
             closeAccountIfLowBalance(from_account);
+            log_transaction(amount, "transfer", null, from_account, to_account);
         }
       }catch(SQLException e){
           return "There was an error while proccessing your request";
@@ -165,13 +170,14 @@ public class ATM{
   public String top_up(String account, double amount){
     try{
       ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
-      while(rs.next()){
+      if(rs.next()){
         String l_id = rs.getString("linked_id");
         if(balanceTooLow(l_id, amount)){
           return "Balance too low.";
         }
         ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+amount+" WHERE a_id= "+LoadDB.parse(account));
         ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(l_id));
+        log_transaction(amount, "top-up", null, l_id, account);
         if(isFirstTransactionOfMonth(account)){
           ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(account));
         }
@@ -197,6 +203,7 @@ public class ATM{
         }
         ResultSet rs_to = database.execute_query("UPDATE Account SET balance = balance+"+(0.97*amount)+" WHERE a_id= "+LoadDB.parse(l_id));
         ResultSet rs_from = database.execute_query("UPDATE Account SET balance = balance-"+amount+" WHERE a_id= "+LoadDB.parse(account));
+        log_transaction(amount, "collect", null, account, l_id);
         if(isFirstTransactionOfMonth(account)){
           ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(account));
         }
@@ -215,19 +222,22 @@ public class ATM{
   public String pay_friend(String from_account, String to_account, double amount){
       try{
         ResultSet rs = database.execute_query("SELECT * FROM Account A1, Account A2 WHERE A1.a_id = "+LoadDB.parse(from_account)+" AND A1.type= 'Pocket' AND "+"A2.a_id= "+LoadDB.parse(to_account)+" AND A2.type= 'Pocket'");
-        while(rs.next()) {
+        if(rs.next()) {
           if(balanceTooLow(from_account, amount)){
             return "Balance too low.";
           }
           String pay = transfer_helper(from_account, to_account, amount);
-        }
-        if(isFirstTransactionOfMonth(from_account)){
-          ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(from_account));
+          if(isFirstTransactionOfMonth(from_account)){
+            ResultSet rs_fee1 = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(from_account));
+            System.out.println("Cat");
+          }
+          if(isFirstTransactionOfMonth(to_account)){
+            ResultSet rs_fee2 = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(to_account));
+            System.out.println("Dog");
+          }
+          log_transaction(amount, "pay-friend", null, from_account, to_account);
         }
         closeAccountIfLowBalance(from_account);
-        if(isFirstTransactionOfMonth(to_account)){
-          ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(to_account));
-        }
         closeAccountIfLowBalance(to_account);
       }catch(SQLException e){
         return "There was an error while proccessing your request";
@@ -249,6 +259,7 @@ public class ATM{
        }
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
        if(rs.next()) {
+         log_transaction(amount, "purchase", null, account, null);
        }
        if(isFirstTransactionOfMonth(account)){
          ResultSet rs_fee = database.execute_query("UPDATE Account SET balance = balance-5 WHERE a_id= "+LoadDB.parse(account));
@@ -262,7 +273,6 @@ public class ATM{
 
 
   public void log_transaction(double amount, String type, String check_no, String paying_id, String receiving_id){
-
     String t_id = "'" + generateRandomChars(10) + "'";
     type = "'" +  type + "'";
     String date = "TO_DATE('" + currentDate + "', 'YYYY-MM-DD HH24:MI:SS')";
@@ -307,7 +317,7 @@ public class ATM{
 
   public boolean isFirstTransactionOfMonth(String a_id){
     try{
-      ResultSet rs = database.execute_query("select T.a_id from transaction T where T.a_id = "+LoadDB.parse(a_id)+" and extract(month from T.timestamp) = (select MAX(extract(month from C.timestamp)) from currentdate C)");
+      ResultSet rs = database.execute_query("SELECT * FROM transaction T WHERE (T.receiving_id = "+LoadDB.parse(a_id)+" OR T.paying_id = "+LoadDB.parse(a_id)+") AND extract(month FROM T.timestamp) = (select MAX(extract(month FROM C.timestamp)) FROM currentdate C)");
       if(rs.next()){
         return false;
       }
