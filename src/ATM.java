@@ -62,7 +62,7 @@ public class ATM{
      try{
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance+"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        if(rs.next()) {
-         log_transaction(amount, "deposit", null, account, null);
+         log_transaction(amount, "deposit", null, null, account);
        }
      }catch(SQLException e){
         return "There was an error while proccessing your request";
@@ -86,7 +86,7 @@ public class ATM{
        }
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance-"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        if(rs.next()) {
-         log_transaction(amount, "withdraw", null, null, account);
+         log_transaction(amount, "withdraw", null,account,null);
          closeAccountIfLowBalance(account);
        }
      }catch(SQLException e){
