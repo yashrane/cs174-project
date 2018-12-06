@@ -58,6 +58,7 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String deposit(String account, double amount){
+    if(isClosed(account)){return "No transactions are allowed on a closed account.";}
      try{
        ResultSet rs = database.execute_query("UPDATE Account SET balance= balance+"+amount+" WHERE a_id= "+LoadDB.parse(account)+" AND (type= 'Student-Checking' OR type= 'Interest-Checking' OR type= 'Savings')");
        if(rs.next()) {
@@ -78,6 +79,7 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String withdraw(String account, double amount){
+    if(isClosed(account)){return "No transactions are allowed on a closed account.";}
      try{
        if(balanceTooLow(account, amount)){
          return "Balance too low.";
@@ -120,6 +122,8 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String wire(String from_account, String to_account, double amount){
+    if(isClosed(from_account)){return "No transactions are allowed on a closed account.";}
+    if(isClosed(to_account)){return "No transactions are allowed on a closed account.";}
     try{
       if(balanceTooLow(from_account, amount)){
         return "Balance too low.";
@@ -145,6 +149,8 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
   public String transfer(String from_account, String to_account, double amount){
+    if(isClosed(from_account)){return "No transactions are allowed on a closed account.";}
+    if(isClosed(to_account)){return "No transactions are allowed on a closed account.";}
     if(amount <= 2000){ //amount cannot exceed $2000
       try{
         if(balanceTooLow(from_account, amount)){
@@ -168,6 +174,7 @@ public class ATM{
    * If it is the first transaction of the month with this account, apply a $5 fee
    */
   public String top_up(String account, double amount){
+    if(isClosed(account)){return "No transactions are allowed on a closed account.";}
     try{
       ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
       if(rs.next()){
@@ -194,6 +201,7 @@ public class ATM{
    * If it is the first transaction of the month with this account, apply a $5 fee
    */
   public String collect(String account, double amount){
+    if(isClosed(account)){return "No transactions are allowed on a closed account.";}
     try{
       ResultSet rs = database.execute_query("SELECT * FROM Account WHERE a_id= "+LoadDB.parse(account)+" AND type= 'Pocket'");
       while(rs.next()){
@@ -220,6 +228,8 @@ public class ATM{
    * If it is the first transaction of the month with either account, apply a $5 fee to the relevant account
    */
   public String pay_friend(String from_account, String to_account, double amount){
+    if(isClosed(from_account)){return "No transactions are allowed on a closed account.";}
+    if(isClosed(to_account)){return "No transactions are allowed on a closed account.";}
       try{
         ResultSet rs = database.execute_query("SELECT * FROM Account A1, Account A2 WHERE A1.a_id = "+LoadDB.parse(from_account)+" AND A1.type= 'Pocket' AND "+"A2.a_id= "+LoadDB.parse(to_account)+" AND A2.type= 'Pocket'");
         if(rs.next()) {
@@ -253,6 +263,7 @@ public class ATM{
    * @return an error message if applicable. null otherwise
    */
    public String purchase(String account, double amount){
+     if(isClosed(account)){return "No transactions are allowed on a closed account.";}
      try{
        if(balanceTooLow(account, amount)){
          return "Balance too low.";
@@ -356,6 +367,11 @@ public class ATM{
     return null;
   }
 
+  public boolean isClosed(String a_id){
+    ResultSet rs = database.execute_query("SELECT isClosed FROM account WHERE a_id="+LoadDB.parse(a_id));
+    double closed = parseResultSetDouble(rs, "isClosed")[0];
+    return closed > 0;
+  }
 
 
 }

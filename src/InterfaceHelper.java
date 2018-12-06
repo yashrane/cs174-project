@@ -50,7 +50,7 @@ public class InterfaceHelper{
   public static void displayList(String listname,String [] items){
     JFrame frame = new JFrame(listname);
     frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-    frame.setSize(300, 400);
+    frame.setSize(400, 400);
     JPanel panel = new JPanel();
     panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 

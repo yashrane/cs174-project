@@ -97,7 +97,7 @@ class BankTellerInterface {
             String id = inputs[0];
             double amount = Double.parseDouble(inputs[1]);
             String error = teller.write_check(id, amount);
-            if(error != null){
+            if(error == null){
               changeScreen("Menu");
             }
             else{
